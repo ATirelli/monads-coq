@@ -144,6 +144,14 @@ Arguments bind_associativity [m _ a b c ] (f g h).
 Arguments bind_morphism [m _ a b ] (x f f').
 Arguments bind_map [m _ a b ] (x f).
 
+Class MonadTrans (t : forall (m : Type -> Type), Type -> Type) : Type :=
+  { monad_trans_is_monad (m : Type -> Type) `{Monad m} :> Monad (t m)
+  ; lift {m} `{Monad m} (a : Type) : m a -> t m a
+  }.
+
+Arguments lift [t _ m _ a] (_%monad).
+
+
 #[local]
 Open Scope signature_scope.
 
