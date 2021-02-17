@@ -13,6 +13,9 @@ Open Scope prelude_scope.
 
 (** * Definition *)
 
+Lemma pair_fst_snd {a b} (x: a*b): (fst x, snd x) = x.
+Proof. destruct x. unfold fst, snd. trivial. Qed.
+
 Definition state_t (s : Type) (m : Type -> Type) (a : Type) : Type :=
   s -> m (a * s).
 
@@ -32,10 +35,18 @@ Definition exec_state_t {m s a} `{Monad m} (r : state_t s m a) (x : s) : m s :=
 
 Definition state_map {m s} `{Monad m} {a b} (f : a -> b) (r : state_t s m a)
   : state_t s m b :=
-  fun* x => (fun o => (f (fst o), snd o)) <$> r x.
+  fun (s0: s) => (bind (r s0) (fun (y:a*s) => pure(f (fst y), snd y))).
+    
+Print state_map.
+
+Lemma fst_snd_in_monad {a s m} `{Monad m}: 
+(fun y : a * s => pure (fst y, snd y)) = (fun y : a * s => pure y).
+Proof. apply functional_extensionality; intros; rewrite pair_fst_snd; trivial. Qed.
 
 Lemma state_functor_identity {m s a} `{Monad m} 
   (r : state_t s m a)
   : state_map id r = id r.
 
-Proof. Admitted. 
+Proof. unfold state_map. apply functional_extensionality. intros. unfold id.
+rewrite fst_snd_in_monad. apply bind_right_identity. Qed.
+ 
