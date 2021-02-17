@@ -165,8 +165,6 @@ Lemma apply_map_bind_pure {m} `{Monad m} {a b}(x: m a) (f:a-> b):
 apply (map f) x = bind x (fun t => pure (f t)).
 Proof. Admitted.
 
-
-
 Next Obligation.
   unfold state_map, state_pure, state_apply.
   apply functional_extensionality. intros.
