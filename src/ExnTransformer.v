@@ -18,14 +18,5 @@ Lemma exn_t_functor_identity {m a} `{Monad m}
 Proof. unfold exn_t_map. 
 assert (H1: (fun y : exn a => pure (exn_map id y))= (fun (y: exn a)=> pure y)) by
 (apply functional_extensionality; intro; rewrite exn_functor_identity; auto).
+
 Admitted.
-
-Lemma exn_t_functor_composition_identity {m a b c} `{Monad m} 
-  (u : b -> c) (v : a -> b) (r : exn_t m a)
-  : exn_t_map (u <<< v) r = ((exn_t_map u) <<< (exn_t_map v)) r.
-Proof. unfold exn_t_map. apply functor_map_identity.
-change (fun x => pure (exn_map (v >>> u) x))
-    with ((fun r0 : exn_t m a => x <- r0;; pure (exn_map v x)) >>>
- (fun r0 : exn_t m b => x <- r0;; pure (exn_map u x))).
-    apply functor_map_identity. Qed.
-
