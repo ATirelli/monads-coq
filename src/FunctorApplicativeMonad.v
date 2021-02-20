@@ -185,13 +185,3 @@ Notation "'let' a ':=' p 'in' q" := (let a := p in q%monad)
 
 Notation "x" := x%monad (in custom monad at level 0, x constr at level 200, only parsing).
 
-#[local]
-Definition test_monad_notation {m} `{Monad m}
-  (compute : nat -> m nat) (p : m unit) (q : nat -> m bool) : nat -> m bool := fun* _ => do
-    p >>= (fun _ => q 2%nat);
-    p;
-    let z := 3 in
-    let* x := id <$> compute 3 in
-    let* y := compute 4 in
-    q (x + y + z)
-  end.

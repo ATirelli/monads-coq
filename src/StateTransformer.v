@@ -86,7 +86,7 @@ Definition state_pure {m s} `{Monad m} {a} (x : a) : state_t s m a :=
 Lemma state_applicative_identity {m s} `{Monad m} {a} (v : state_t s m a):
   state_apply (state_pure id) v = v.
 Proof. unfold state_apply, state_pure. apply functional_extensionality. intros.
-rewrite bind_left_identity. simpl. unfold id. 
+rewrite bind_left_identity. simpl. unfold id.  
 assert (H1: (fun (v0:a*s) => pure (fst v0, snd v0))= (fun v0 =>pure  v0)).
 - apply functional_extensionality. intros. destruct x0; auto.
 - rewrite H1. apply bind_right_identity. Qed.
@@ -161,17 +161,60 @@ Next Obligation.
    apply state_applicative_interchange.
 Defined.
 
-Lemma apply_map_bind_pure {m} `{Monad m} {a b}(x: m a) (f:a-> b): 
-apply (map f) x = bind x (fun t => pure (f t)).
-Proof. Admitted.
-
 Next Obligation.
   unfold state_map, state_pure, state_apply.
   apply functional_extensionality. intros.
   rewrite bind_left_identity. 
-  cbn. apply apply_map_bind_pure. Defined.
+  cbn. apply bind_map. Defined.
+  
+  
+(* now we prove that the image under state_t of a monad m is indeed a monad *)
+
+Definition state_bind {m s} `{Monad m} {a b}
+  (r : state_t s m a) (f : a -> state_t s m b)
+  : state_t s m b :=
+  fun x => y <- r x ;; f (fst y) (snd y).
+
+Lemma state_bind_associativity {m s} `{Monad m}  {a b c} 
+  (f : state_t s m a) (g : a -> state_t s m b) (h : b -> state_t s m c)
+  : state_bind (state_bind f g) h = state_bind f (fun x : a => state_bind (g x) h).
+Proof.
+  unfold state_bind. apply functional_extensionality. intros.
+  rewrite bind_associativity.
+  reflexivity.
+Qed.
+
+#[program]
+Instance state_Monad (m : Type -> Type) `{Monad m} (s : Type) 
+  : Monad (state_t s m) :=
+  { bind := @state_bind m s _
+  }.
+  
+Next Obligation. unfold state_bind. apply functional_extensionality. intros.
+unfold state_pure. apply bind_left_identity. Defined.
+
+Next Obligation. unfold state_bind, state_pure.
+assert (R: (fun u : a * s => pure (fst u, snd u)) = fun u : a * s => pure (f:=m) u).
+- apply functional_extensionality; intro u; destruct u; auto.
+- rewrite R. apply functional_extensionality; intro. apply bind_right_identity. Defined.
+
+Next Obligation.
+  apply state_bind_associativity.
+Defined.
+
+Next Obligation.
+  unfold state_bind, state_map, state_pure.
+  apply functional_extensionality; intro.
+  apply bind_map. Defined.
 
 
+Definition state_lift {m s} `{Monad m} {a} (x : m a) : state_t s m a :=
+  fun s => bind x (fun o => pure (o, s)).
 
+
+Instance state_MonadTrans (s : Type) : MonadTrans (state_t s) :=
+  { lift := fun m H => @state_lift m s H
+  }.
  
+
  
