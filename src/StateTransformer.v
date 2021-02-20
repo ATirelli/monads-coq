@@ -86,7 +86,7 @@ Definition state_pure {m s} `{Monad m} {a} (x : a) : state_t s m a :=
 Lemma state_applicative_identity {m s} `{Monad m} {a} (v : state_t s m a):
   state_apply (state_pure id) v = v.
 Proof. unfold state_apply, state_pure. apply functional_extensionality. intros.
-rewrite bind_left_identity. simpl. unfold id.  
+rewrite bind_left_identity. simpl. unfold id.   
 assert (H1: (fun (v0:a*s) => pure (fst v0, snd v0))= (fun v0 =>pure  v0)).
 - apply functional_extensionality. intros. destruct x0; auto.
 - rewrite H1. apply bind_right_identity. Qed.
