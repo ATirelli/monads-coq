@@ -34,6 +34,7 @@ Definition exec_state_t {m s a} `{Monad m} (r : state_t s m a) (x : s) : m s :=
   map snd (r x).
 
 (** * State Monad *)
+Print apply.
 
 Definition state_map {m s} `{Monad m} {a b} (f : a -> b) (r : state_t s m a)
   : state_t s m b :=

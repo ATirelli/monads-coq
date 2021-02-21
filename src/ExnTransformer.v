@@ -8,10 +8,6 @@ Notation "x <- c1 ;; c2" := (bind c1 (fun x => c2))
 
 Set Universe Polymorphism.
 
-#[local]
-Close Scope nat_scope.
-#[local]
-Open Scope prelude_scope.
 
 (** * Definition *)
 
@@ -21,13 +17,13 @@ Inductive exn(A:Type) : Type :=
 Arguments Result {A}.
 Arguments Fail {A}.
 
+Definition exn_t(m: Type -> Type) (a: Type) : Type := m (exn a).
+
 Definition exn_map {a b} (f : a -> b) (r : exn a)
   : (exn b):=
 match r with 
 | Result x => Result (f x)
 | Fail s => Fail s end.
-
-Definition exn_t  (m : Type -> Type) (a : Type) : Type := m (exn a).
 
 Bind Scope monad_scope with exn_t.
 
@@ -78,6 +74,51 @@ match fs with
 | Result x => match f with 
                 | Result g => Result (g x)
                 | Fail t => Fail t end end .
-
+                
 Definition exn_t_pure {m} `{Monad m} {a} (x : a) : exn_t m a := pure (Result x).
 
+Definition exn_t_apply {m} `{Monad m} {a b} (f: exn_t m (a->b)) (r: exn_t m a): exn_t m b :=
+
+bind(a:=exn a) r (fun (x: exn a) => 
+    (bind(a:=exn (a->b)) f (fun (y: exn (a->b)) => pure (exn_apply y x)))).
+    
+#[program]
+Instance exn_t_Applicative (m : Type -> Type) `{Monad m} 
+  : Applicative (exn_t m) :=
+  { pure := @exn_t_pure m  _
+  ; apply := @exn_t_apply m  _
+  }.
+  
+Next Obligation. Admitted.
+Next Obligation. Admitted.
+Next Obligation. Admitted.
+Next Obligation. Admitted.
+Next Obligation. Admitted.
+
+Definition exn_t_bind {m} `{Monad m} {a b}
+  (r : exn_t m a) (f : a -> exn_t m b)
+  : exn_t m b := 
+ bind(a:= exn a) r (fun (x: exn a)=> match x with 
+                                          | Result y => f y
+                                          | Fail s => pure (Fail s) end).
+
+#[program]
+Instance exn_t_Monad (m : Type -> Type) `{Monad m} 
+  : Monad (exn_t  m) :=
+  { bind := @exn_t_bind m  _
+  }.
+  
+Next Obligation. Admitted.
+Next Obligation. Admitted.
+Next Obligation. Admitted.
+Next Obligation. Admitted.
+
+
+(*Definition exn_t_lift {m} `{Monad m} {a} (x : m a) : exn_t m a :=
+  fun s => bind x (fun o => pure (o, s)).
+
+
+Instance exn_t_MonadTrans  : MonadTrans (exn_t) :=
+  { lift := fun m H => @exn_t_lift m H
+  }.
+*)

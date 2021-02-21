@@ -94,6 +94,7 @@ Arguments applicative_homomorphism [f _ a b ] (v x).
 Arguments applicative_interchange [f _ a b ] (u y).
 Arguments applicative_pure_map [f _ a b ] (g x).
 
+
 Notation "f <*> g" := (apply f g) (at level 28, left associativity) : monad_scope.
 
 Definition liftA2 {f a b c} `{Applicative f} (g : a -> b -> c) (x : f a) (y : f b) : f c :=
