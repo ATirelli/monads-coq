@@ -1,8 +1,11 @@
 Add LoadPath "./" as Monads .
 Require Import Monads.FunctorApplicativeMonad.
-Require Import Monads.StateMonad.
-Require Import Monads.ExnTransformer.
+Require Import Monads.StateTransformer.
+Require Import Monads.ExnMonad.
 Require Import NPeano Arith Bool String List.
+
+Notation "x <- c1 ;; c2" := (bind c1 (fun x => c2)) 
+                             (right associativity, at level 84, c1 at next level).
 
 Definition state:= string -> nat.
 Definition eqb_string (x y : string) : bool :=
@@ -73,14 +76,14 @@ Notation "'while' x 'd' y 'end'" :=
          (CWhile x y)
    (in custom com at level 89, x at level 99, y at level 99) : com_scope.
    
-Definition exn_state:= exn_t (state_comp state).
+Definition exn_state:= state_t state exn.
 Definition eval_exn_state :=exn_state nat.
 Definition exec_exn_state :=exn_state unit.
 
 Definition fetch (x:string) : eval_exn_state := 
-  fun s =>  (Result (s x), s).
+  fun s =>  Result (s x, s).
 Definition assign (x:string) (n:nat) : exec_exn_state := 
-  fun s => (Result tt, state_update s x n).
+  fun s => Result (tt, state_update s x n).
   
 Fixpoint eval (a : exp) : eval_exn_state :=
   match a with
@@ -88,14 +91,54 @@ Fixpoint eval (a : exp) : eval_exn_state :=
   | AId x        => fetch x  
   | <{a1 + a2}>  => n1 <- eval a1 ;; n2 <- eval a2 ;; pure (n1 + n2)
   | <{a1 / a2}>  => n1 <- eval a1 ;; n2 <- eval a2 ;; match n2 with 
-                                                              | 0 => fun s => (Fail "Division by zero!", s)
+                                                              | 0 => fun s => Fail "Division by zero!"
                                                               | _ => pure (n1 / n2) end
   | <{a1 == a2}> => n1 <- eval a1 ;; n2 <- eval a2 ;; match (beq_nat n1 n2) with 
                                                                           | true     => pure 0
                                                                           | false    => pure 1
                                                                           end end.
+
  
 Example ex:exp := <{X+Y/Z}>.
-Compute fst (eval ex (newarray 1)). 
-Compute fst (eval ex empty_st).  
+Compute  (eval ex (newarray 1)). 
+Compute  (eval ex empty_st).  
+
+Fixpoint exec (c: com)(fuel: nat): exec_exn_state :=
+match fuel with 
+| 0       => fun s => Fail "Gas finished before end of program! Try executing with more gas."
+| S fuel' => match c with 
+    | <{ skip }>    => pure tt
+    | <{ x := a }>  => n <- eval a ;; fun s => Result (tt, state_update s x n)
+    | <{c1; c2}>    => x <- (exec c1 fuel');; y <- (exec c2 fuel');; pure tt
+    | <{if a then c1 else c2 end}> => n <- eval a ;; match n with 
+                                                    | 0 => (exec c1 fuel')
+                                                    | _ => (exec c2 fuel') end
+    | <{while b d c1 end}> => n <- eval b ;; match n with
+                                                    | 0 => x<-(exec c1 fuel');;(exec c fuel')
+                                                    | _ => pure tt end 
+
+end end .
+
+Definition fact_in_coq : com :=
+  <{ Z := 0;
+     Y := 1;
+     while X d
+       if Y == 5 then 
+         X:=1; X:=X/Z 
+       else
+         Y := Y+1
+       end
+      end
+     }>.
+     
+Definition eval_on_exn_state(es: exn (unit*state))(s: string): exn  nat:=
+match es with 
+| Fail str => Fail str 
+| Result (a, st) => Result (st s) end. 
+
+Compute  eval_on_exn_state((exec fact_in_coq 2) empty_st) X.
+
+
+
+
 

@@ -74,17 +74,17 @@ Notation "'while' x 'do' y 'end'" :=
    (in custom com at level 89, x at level 99, y at level 99) : com_scope.
 
 
-Fixpoint eval (a : exp) (s: state): exn nat :=
+Fixpoint eval (a : exp) :(state-> exn nat) :=
   match a with
-  | ANum n       => Result n
-  | AId x        => Result (s x)  
-  | <{a1 + a2}>  => let n1:= (eval a1 s) in let n2:= (eval a2 s) in 
+  | ANum n       => fun s => Result n
+  | AId x        => fun s => Result (s x)  
+  | <{a1 + a2}>  => fun s => let n1:= (eval a1 s) in let n2:= (eval a2 s) in 
                                 match n1 with 
                                   | Fail s    => Fail s
                                   | Result m1 => match n2 with 
                                         | Fail s => Fail s
                                         | Result m2 => Result (m1 + m2) end end 
-  | <{a1 / a2}>  => let n1:= (eval a1 s) in let n2:= (eval a2 s) in 
+  | <{a1 / a2}>  => fun s => let n1:= (eval a1 s) in let n2:= (eval a2 s) in 
                                 match n1 with 
                                   | Fail s    => Fail s
                                   | Result m1 => match n2 with 
@@ -92,7 +92,7 @@ Fixpoint eval (a : exp) (s: state): exn nat :=
                                         | Result m2 => match m2 with 
                                                  | 0 => Fail "Division by zero!"
                                                  | _ => Result (m1/m2) end end end 
-  | <{a1 == a2}> => let n1:= (eval a1 s) in let n2:= (eval a2 s) in 
+  | <{a1 == a2}> => fun s => let n1:= (eval a1 s) in let n2:= (eval a2 s) in 
                                 match n1 with 
                                   | Fail s    => Fail s
                                   | Result m1 => match n2 with 
@@ -135,11 +135,11 @@ match fuel with
 end end .
                                                           
 Definition fact_in_coq : com :=
-  <{ Z := X;
+  <{ Z := 5;
      Y := 1;
      while X do
-       if Y == 5 then 
-         X:=1; X:=X/Z
+       if Y == 100 then 
+         X:=1 
        else
          Y := Y+1
        end
@@ -153,7 +153,7 @@ match es with
 
 
 
-Compute  eval_on_exn_state((exec fact_in_coq 20) empty_st) X.
+Compute  eval_on_exn_state((exec fact_in_coq 20) empty_st) Y.
    
    
  
