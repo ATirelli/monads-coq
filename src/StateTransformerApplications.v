@@ -89,49 +89,13 @@ Fixpoint eval (a : exp) : eval_exn_state :=
   | <{a1 + a2}>  => n1 <- eval a1 ;; n2 <- eval a2 ;; pure (n1 + n2)
   | <{a1 / a2}>  => n1 <- eval a1 ;; n2 <- eval a2 ;; match n2 with 
                                                               | 0 => fun s => (Fail "Division by zero!", s)
-                                                              | _ => pure (n1 + n2) end
+                                                              | _ => pure (n1 / n2) end
   | <{a1 == a2}> => n1 <- eval a1 ;; n2 <- eval a2 ;; match (beq_nat n1 n2) with 
                                                                           | true     => pure 0
                                                                           | false    => pure 1
                                                                           end end.
  
-Example ex:exp := <{Z==X/Y}>.
+Example ex:exp := <{X+Y/Z}>.
 Compute fst (eval ex (newarray 1)). 
-Compute fst (eval ex empty_st). 
- 
-(*Fixpoint exec (c : com) (i : nat) : exec_exn_state :=
-  match i with
-  | O => pure (Fail "Finished gas before end of program! Try evaluating with more gas...")
-  | S i' =>
-    match c with
-      | <{ skip }>        => pure tt
-      | <{ x := a }>      => n <- eval a ;; match n with 
-                                                 | Result m =>  assign x n
-                                                 | Fail t  => fun s => (Fail t, s) 
-                                                 end
-      | <{c1; c2}>        => x <- exec c1 (S i') ;; match x with 
-                                                        | Fail t  => fun s => (Fail t, s)
-                                                        | Result m => y <- exec c1 (S i');; match y with 
-                                                                    | Fail t  => fun s => (Fail t, s)
-                                                                    | Result m => pure tt 
-                                                                    end 
-                                                        end 
-      | <{if a then c1 else c2 end}>  => m <- eval a ;; match m with 
-                                                            | Fail t  => fun s => (Fail t, s)
-                                                            | Result n => 
-                                                                match n with 
-                                                                  | 0 => exec c1 i'
-                                                                  | _ => exec c2 i'
-                                                                      end
-                                                             end 
-      | <{while b d c end}> => m <- eval b ;; match m with 
-                                                            | Fail t  => fun s => (Fail t, s)
-                                                            | Result n =>  match n with 
-                                                                  | 0 => exec c i'
-                                                                  | _ => pure tt
-                                                                  end 
-                                                             end 
-      end
-    end.
-  
- *)
+Compute fst (eval ex empty_st).  
+

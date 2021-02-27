@@ -207,6 +207,8 @@ Next Obligation.
   unfold state_bind, state_map, state_pure.
   apply functional_extensionality; intro.
   apply bind_map. Defined.
+  
+Print state_Monad.
 
 
 Definition state_lift {m s} `{Monad m} {a} (x : m a) : state_t s m a :=

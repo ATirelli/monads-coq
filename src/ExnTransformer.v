@@ -113,12 +113,5 @@ Next Obligation. Admitted.
 Next Obligation. Admitted.
 Next Obligation. Admitted.
 
+Print exn_t_Monad.
 
-(*Definition exn_t_lift {m} `{Monad m} {a} (x : m a) : exn_t m a :=
-  fun s => bind x (fun o => pure (o, s)).
-
-
-Instance exn_t_MonadTrans  : MonadTrans (exn_t) :=
-  { lift := fun m H => @exn_t_lift m H
-  }.
-*)
