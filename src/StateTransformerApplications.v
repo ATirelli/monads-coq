@@ -139,6 +139,63 @@ match es with
 Compute  eval_on_exn_state((exec fact_in_coq 2) empty_st) X.
 
 
+Fixpoint eval_not_t (a : exp) :state-> exn (nat*state) :=
+  match a with
+  | ANum n       => fun s => Result (n, s)
+  | AId x        => fun s => Result (s x, s) 
+  | <{a1 + a2}>  => fun s => let n1:=(eval_not_t a1 s) in let n2:= (eval_not_t a2 s) in 
+                                match n1 with 
+                                  | Fail s    => Fail s
+                                  | Result (m1, t) => match n2 with 
+                                        | Fail s => Fail s
+                                        | Result (m2, t) => Result (m1 + m2, s) end end 
+  | <{a1 / a2}>  => fun s => let n1:=(eval_not_t a1 s) in let n2:= (eval_not_t a2 s) in 
+                                match n1 with 
+                                  | Fail s    => Fail s
+                                  | Result (m1, t) => match n2 with 
+                                        | Fail s => Fail s
+                                        | Result (m2, t) => match m2 with 
+                                                 | 0 => Fail "Division by zero!"
+                                                 | _ => Result (m1/m2, s) end end end 
+  | <{a1 == a2}> => fun s => let n1:=(eval_not_t a1 s) in let n2:= (eval_not_t a2 s) in  
+                                match n1 with 
+                                  | Fail s    => Fail s
+                                  | Result (m1, t) => match n2 with 
+                                        | Fail s => Fail s
+                                        | Result (m2, t) => match (beq_nat m1 m2) with 
+                                                        | true     => Result (0, s)
+                                                        | false    => Result (1, s)
+                                                                          end end end end .
+
+Compute  (eval ex (newarray 1)). 
+Compute  (eval ex empty_st).
+Fixpoint exec_no_t (c: com)(fuel: nat): (state -> exn(unit * state)) :=
+match fuel with 
+| 0       => fun s=> Fail "Gas finished before end of program! Try executing with more gas."
+| S fuel' => match c with 
+        | <{ skip }>    => fun s => Result (tt, s)
+        | <{ x := a }>  => fun s => let m:=(eval_not_t a s) in match m with 
+                                                | Result (n, s) => Result (tt, state_update s x n)
+                                                | Fail str => Fail str end 
+        | <{c1; c2}>    => fun s => let o:= (exec_no_t c1 fuel') in match (o s) with 
+                                                | Fail str => Fail str
+                                                | Result (a, s') => 
+                                                    let o':= (exec_no_t c2 fuel') in (o' s') end 
+        | <{if a then c1 else c2 end}> => fun s => let m:=(eval_not_t a s) in match m with
+                                                | Fail str => Fail str 
+                                                | Result (n, s) => match n with 
+                                                          | 0 => (exec_no_t c1 fuel') s
+                                                          | _ => (exec_no_t c2 fuel') s end end 
+        |<{while b d c1 end}> => fun s => let m:=(eval_not_t b s) in match m with
+                                                | Fail str => Fail str
+                                                | Result (b1, s) => match b1 with 
+                                                        | S _ => Result (tt, s)
+                                                        | 0   => match ((exec_no_t c1 fuel') s) with 
+                                                               | Result (a, s') => (exec_no_t c fuel') s'
+                                                               | Fail str => Fail str end end end 
+end end.
+
+
 
 
 
