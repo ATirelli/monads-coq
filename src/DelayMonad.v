@@ -5,19 +5,9 @@ Require Import Monads.Tactics.
 Require Import Monads.FunctorApplicativeMonad.
 
 
-
-
 CoInductive Partial A: Type :=
 | rtrn : A -> Partial A
 | step : Partial A -> Partial A.
-
-Ltac findDestr := match goal with
-                    | [ |- context[match ?E with rtrn _ => _ | step _ => _ end] ] =>
-                      match E with
-                        | context[match _ with rtrn _ => _ | step _ => _ end] => fail 1
-                        | _ => destruct E
-                      end
-                  end.
 
 CoFixpoint partial_map  {a b} (f : a -> b) (x : Partial a): Partial b := 
 match x with 
@@ -97,15 +87,11 @@ Proof. intros. apply (bisim_is_unique (fun m1 m2 => m1 = m2)).
      * intros. inversion H. reflexivity.
 - reflexivity. Qed.
 
-Theorem bindleft_identity : forall A B (a : A) (f : A -> Partial B),
-  bisim (partial_bind f (rtrn a)) (f a).
-Proof. intros. apply partial_bisim_frob. simpl. destruct (f a); simpl; apply bisim_refl. Qed.
-
 
 (* Functor axioms *) 
 Theorem map_id: forall A (m: Partial A), bisim (partial_map id m) m.
-intros. apply (bisim_is_unique (fun m1 m2 => m1 = partial_map id m2));
-crush; findDestr; reflexivity. Qed.
+intros. apply (bisim_is_unique (fun m1 m2 => m1 = partial_map id m2)).
+intros. crush. destruct m2;  reflexivity; reflexivity. reflexivity. Qed.
 
 Theorem map_assoc: forall A B C (m: Partial A) (f: A -> B) (g: B -> C), 
 bisim (partial_map (g <<< f) m) (partial_map g (partial_map f m)).
@@ -114,16 +100,90 @@ intros.
 apply (bisim_is_unique (fun m1 m2 => (exists m,
     m1 = partial_map (f>>>g) m 
  /\ m2 = (partial_map g (partial_map f m))
-  \/ m1 = m2))); crush; auto; repeat (findDestr; crush; auto).
- - exists x. left. split; reflexivity.
- - exists x. right. reflexivity.
- - exists m. left. split; reflexivity. Qed.
+  \/ m1 = m2))).
+intros. crush. destruct x.
+- reflexivity.
+- exists x. left. split; reflexivity.
+- destruct m2. reflexivity. exists x. right; reflexivity.
+- exists m. left. split; reflexivity. 
+Qed.
 
+Definition partial_pure A (x: A):= rtrn x.
+Lemma partial_applicative_identity: forall  {a} (v : Partial a), bisim (partial_apply (partial_pure id) v) v.
+Proof. intros.
+apply (bisim_is_unique (fun m1 m2 => (m1 = partial_apply (partial_pure id) m2))). crush.
+intros. destruct m2. reflexivity. 
+- reflexivity.
+- reflexivity. Qed.
+Notation "f <*> g" := (partial_apply f g) (at level 28, left associativity) .
+(*applicative_composition {a b c}  (u : f (b -> c)) (v : f (a -> b)) (w : f a)
+    : pure compose <*> u <*> v <*> w = u <*> (v <*> w)*)
+
+Lemma partial_applicative_composition {a b c}  (t : Partial (b -> c)) (v : Partial (a -> b)) (w : Partial a)
+    : bisim (partial_pure compose <*> t <*> v <*> w)  (t <*> (v <*> w)).
+Proof. 
+apply (bisim_is_unique (fun m1 m2 => (exists (m3:Partial (b -> c)) (m4:Partial (a -> b)) (m5: Partial a),
+    m1 = (partial_pure compose <*> m3 <*> m4 <*> m5)
+ /\ m2 = (m3 <*> (m4 <*> m5))
+  \/ m1 = m2))).
+crush. destruct x1.  destruct x0. destruct x.
+- auto.
+
+-  exists x. exists (rtrn b0). exists (rtrn a0). auto.
+- exists x. exists x0. exists (rtrn a0). left; auto.
+- exists x. exists x0. exists x1. left; auto.
+- destruct m2. auto. exists t. exists v. exists w. auto.
+- exists t. exists v. exists w. left; auto. Qed. 
+
+Lemma partial_applicative_homomorphism {a b} (v : a -> b) (x : a)
+  : bisim (partial_apply (partial_pure v) (partial_pure x)) (partial_pure (v x)).
+  Proof.
+apply (bisim_is_unique (fun m1 m2 => (exists m,
+    m1 = partial_apply (partial_pure v) (partial_pure m)
+ /\ m2 = partial_pure (v m)
+  \/ m1 = m2))). 
+  crush. intros. destruct m2. - reflexivity.
+  - exists x.  auto.
+  - exists x. auto. Qed.
+  
+ Lemma partial_applicative_interchange {a b}(u : Partial (a -> b)) (y : a)
+  : bisim (partial_apply u (partial_pure y)) (partial_apply (partial_pure (fun z : a -> b => z y)) u).
+Proof. 
+apply (bisim_is_unique (fun m1 m2 => (exists m,
+    m1 = partial_apply m (partial_pure y)
+ /\ m2 = partial_apply (partial_pure (fun z : a -> b => z y)) m
+  \/ m1 = m2))).
+crush. destruct x.
+- reflexivity.
+- exists x. left. split; auto.
+- destruct m2. auto. exists x. right; auto.
+- exists u; left; split; auto. Qed.
+
+(* ; applicative_pure_map {a b}  (g : a -> b) (x : f a)
+    : g <$> x = pure g <*> x*)
+    
+Lemma partial_applicative_pure_map {a b} (g: a -> b) (x: Partial a): 
+bisim (partial_map g x) (partial_apply (partial_pure g) x).
+Proof. 
+apply (bisim_is_unique (fun m1 m2 => (exists m,
+    m1 = (partial_map g m)
+ /\ m2 = partial_apply (partial_pure g) m
+  \/ m1 = m2))).
+crush. destruct x0.
+- reflexivity.
+- exists x0. auto.
+- destruct m2; auto. exists x0. auto.
+- exists x. auto. Qed.
+
+(* Some of the monad axioms *)
+Theorem bindleft_identity : forall A B (a : A) (f : A -> Partial B),
+  bisim (partial_bind f (rtrn a)) (f a).
+Proof. intros. apply partial_bisim_frob. simpl. destruct (f a); simpl; apply bisim_refl. Qed.
 
 Theorem bindright_identity : forall A (m : Partial A),
   bisim (partial_bind partial_ret m) m.
-Proof. intros. apply (bisim_is_unique (fun m1 m2 => m1 = partial_bind partial_ret m2)); 
-crush; findDestr; reflexivity.
+Proof. intros. apply (bisim_is_unique (fun m1 m2 => m1 = partial_bind partial_ret m2)).
+crush. destruct m2. crush. auto. auto.
 Qed.
 
 
@@ -134,8 +194,25 @@ intros.
  apply (bisim_is_unique (fun m1 m2 => (exists m,
     m1 = partial_bind g (partial_bind f m)
     /\ m2 = partial_bind (fun x => partial_bind g (f x) ) m)
-  \/ m1 = m2))
-; crush; eauto; repeat (findDestr; crush; eauto).
+  \/ m1 = m2)).
+intros. crush. destruct x. destruct (f a). crush. destruct (g b). auto. auto.
+crush. eauto. destruct m2. auto. auto. eauto. 
 Qed.
 
+(*
+bind_map {a b} (x : m a) (f : a -> b)
+    : f <$> x = (x >>= (fun y => pure (f y)))
+*)
+
+Theorem parrtial_bind_map {a b} (x : Partial a) (f : a -> b)
+    : bisim (partial_map f x)  (partial_bind (fun y => partial_pure (f y)) x).
+Proof.
+apply (bisim_is_unique (fun m1 m2 => (exists m,
+    m1 = (partial_map f m)
+    /\ m2 = (partial_bind (fun y : a => partial_pure (f y)) m))
+  \/ m1 = m2)).
+crush. destruct x0. crush.
+- left; eauto.
+- destruct m2; repeat eauto.
+- left; eauto. Qed.
 
