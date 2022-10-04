@@ -1,5 +1,4 @@
 Set Implicit Arguments.
-Add LoadPath "./" as Monads .
 
 Require Import Monads.Tactics.
 Require Import Monads.FunctorApplicativeMonad.
