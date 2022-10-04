@@ -1,5 +1,5 @@
 Set Implicit Arguments.
-Add LoadPath "./" as Monads .
+
 
 Require Import Monads.Tactics.
 Require Import Monads.FunctorApplicativeMonad.
@@ -91,7 +91,7 @@ Proof. intros. apply (bisim_is_unique (fun m1 m2 => m1 = m2)).
 (* Functor axioms *) 
 Theorem map_id: forall A (m: Partial A), bisim (partial_map id m) m.
 intros. apply (bisim_is_unique (fun m1 m2 => m1 = partial_map id m2)).
-intros. crush. destruct m2;  reflexivity; reflexivity. reflexivity. Qed.
+intros. rewrite H.  destruct m2;  reflexivity; reflexivity. reflexivity. Qed.
 
 Theorem map_assoc: forall A B C (m: Partial A) (f: A -> B) (g: B -> C), 
 bisim (partial_map (g <<< f) m) (partial_map g (partial_map f m)).
