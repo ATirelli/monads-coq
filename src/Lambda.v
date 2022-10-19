@@ -43,14 +43,17 @@ Inductive value: Type :=
 Definition env := list value.
 Definition Fail {A: Type}:= Return (@None A).
 
+Definition Ret {A: Type}(x: A):= Return (Some x).
+Print Ret.
+
 
 CoFixpoint bs (t: term) (e:env): (CompPartial value) :=
 match t with 
- | Const i => Return (Some (Int i))
+ | Const i => Ret (Int i)
  | Var n => match (nth_error e n) with 
-         | Some v => Return (Some v)
+         | Some v => Ret v
          | None => Fail end
- | Fun a => Return (Some (Clos a e)) 
+ | Fun a => Ret (Clos a e) 
  | App a b => v1 <- bs a e ; v2 <- bs b e ; match v1 with 
                                           | None => Fail
                                           | Some(Int r) => Fail
