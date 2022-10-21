@@ -8,7 +8,7 @@ CoInductive Computation (A:Type) : Type :=
 | Bind : forall (B:Type), Computation B-> (B-> Computation A)-> Computation A.
 Arguments Return {A}.
 Arguments Bind {A B}.
-Notation "c >>= f" := (Bind f c) (at level 20).
+Notation "c >>= f" := (Bind c f) (at level 20).
 Notation "var <- c ; rest" :=
 (Bind c (fun var => rest) )
 (at level 60, right associativity).
@@ -27,7 +27,12 @@ match x with
 | rtrn (Some x) => f x
 | step y => step (bind y f) end.
 
-Definition CompPartial (A: Type) := Computation (option A).
+Notation "var <-- c ;; rest" :=
+(bind c (fun var => rest) )
+(at level 60, right associativity).
+
+
+Definition CompPartial (A: Type) := Computation (OptPartial A).
 Parameter const: Type.
 
 Inductive term: Type :=
@@ -41,30 +46,27 @@ Inductive value: Type :=
   | Clos: term -> list value -> value.
 
 Definition env := list value.
-Definition Fail {A: Type}:= Return (@None A).
+Definition Fail {A: Type}:= Return (@fail A).
 
-Definition Ret {A: Type}(x: A):= Return (Some x).
+
+Definition Ret {A: Type}(x: A):= Return (ret x).
 Print Ret.
 
+Definition demonad {A: Type} (x: CompPartial A):=
+match x with 
+| Return t => t
+| _ => fail end.
 
 CoFixpoint bs (t: term) (e:env): (CompPartial value) :=
 match t with 
  | Const i => Ret (Int i)
- | Var n => match (nth_error e n) with 
-         | Some v => Ret v
-         | None => Fail end
+ | Var n   => match (nth_error e n) with 
+           | Some v => Ret v
+           | None   => Fail end
  | Fun a => Ret (Clos a e) 
- | App a b => v1 <- bs a e ; v2 <- bs b e ; match v1 with 
-                                          | None => Fail
-                                          | Some(Int r) => Fail
-                                          | Some(Clos g s) => match v2 with 
-                                                      | None => Fail 
-                                                      | Some z => bs g (z::s) end end end .
-
-
-
-
-
-
-
+ | App a b => op1 <- bs a e ; op2 <- bs b e ; 
+                        Return (v1 <-- op1 ;; v2 <-- op2 ;; match v1 with 
+                                    | Int n    => fail 
+                                    | Clos x y => fail end)
+                                                   end.
 
