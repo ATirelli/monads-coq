@@ -109,22 +109,6 @@ rewrite Bind_On_Return. constructor. apply bisim_refl.
 - apply bisim_trans with (b:=(bs omega e)). apply bisim_symm in H. assumption. apply CIH.  Qed.
 
 
- apply CIH.  
-rewrite frob_eq with (x:=(bs (App (Var 0) (Var 0)) (cons (Clos (App (Var 0) (Var 0)) e) e))).
-simpl.
-rewrite frob_eq with (x:=bs (Var 0) (cons (Clos (App (Var 0) (Var 0)) e) e)). simpl.
-rewrite Bind_On_Return. rewrite Bind_On_Return.  constructor. constructor.
-rewrite frob_eq with (x:=(bs (App (Var 0) (Var 0)) (cons (Clos (App (Var 0) (Var 0)) e) e))).
-simpl.
-rewrite frob_eq with (x:=bs (Var 0) (cons (Clos (App (Var 0) (Var 0)) e) e)). simpl.
- rewrite Bind_On_Return. rewrite Bind_On_Return. 
-rewrite del
-assert (bisim (bs omega e) 
-(Step (bs (App (Var 0) (Var 0)) (Clos (App (Var 0) (Var 0)) e :: e)))).
-
-Eval compute in ( bs  (Const 2) nil).
-
-
 
 
 
