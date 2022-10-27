@@ -36,68 +36,22 @@ Proof. destruct x; reflexivity. Qed.
 CoInductive bisim {A} : Computation A -> Computation A -> Prop :=
 | BisimRtrn   : forall x, bisim (Return x) (Return x)
 | BisimBind  : forall (B: Type) (f: B -> Computation A) x, bisim (Bind x f) (Bind x f)
+| BisimStep : forall x y, bisim x y -> bisim (Step x) (Step y)
 | BisimStepL : forall x y, bisim x y -> bisim (Step x) y
 | BisimStepR : forall x y, bisim x y -> bisim  x (Step y)
 | BisimFail: bisim Fail Fail.
-Hint Resolve BisimRtrn : core.
-(*Hint Resolve BisimBind : core.
-Hint Resolve BisimStep : core.
-Hint Resolve BisimStepL : core.
-Hint Resolve BisimStepR : core.
-Hint Resolve BisimFail : core.*)
 
-
-
-
-(*Theorem bisim_refl {A}: forall (a: Computation A), bisim a a.
+Theorem bisim_refl {A}: forall (a: Computation A), bisim a a.
 Proof. cofix CIH.  intros. destruct a; constructor; constructor; apply CIH. Qed.
-Hint Resolve bisim_refl : core.
+
 Theorem bisim_symm {A}: forall (a b: Computation A), bisim a b -> bisim b a.
 Proof. cofix CIH. intros. inversion H; subst; constructor.
 -  inversion H; 
 repeat (apply CIH in H0; assumption;
   apply CIH in H0; assumption).
-apply CIH in H0; assumption. apply CIH in H0; assumption. Qed.
-Hint Resolve bisim_symm : core.*)
+- apply CIH in H0; assumption.
+- apply CIH in H0; assumption. Qed.
 
-Theorem bisim_trans {A}: forall (a b c: Computation A), bisim a b -> bisim b c -> bisim a c.
-Proof. cofix CIH. intros. inversion H. subst. inversion H0; subst.
-- auto. 
-- 
--     as []. inversion H0. inversion H H0; subst; inversion H0; subst.
-- auto. 
-- inversion H; subst.s
-- inversion H; subst. auto. 
-- 
-
-
-
- inversion H. subst. inversion H0. destruct H0. 
-- auto.
-- constructor. apply CIH with (b:=  y); auto. 
-- constructor. apply CIH with (b:=  y); auto.
-- inversion H. H0. 
--  destruct H0.
-
-- constructor.  apply bisim_refl.
-- apply bisim_refl.
-- constructor; assumption.
-- constructor; assumption.
-- constructor; assumption.
-- constructor.
-- assumption.
-- constructor. apply BisimStepR in H. apply CIH with (b:= Step y); assumption.
-- constructor. apply CIH with (b:= y); assumption.  
-(*- rewrite (frob_eq x) in *. rewrite (frob_eq c) in *. apply CIH with (b:= Step y). *)
--  destruct c. destruct x. constructor. inversion H0. subst.
-
-inversion H0. subst. apply  apply CIH with (a:=x) in H0. assumption.  destruct c; destruct x. apply BisimStepR in H. apply CIH with (b:= Step y); assumption. Guarded.
-+ 
- destruct H0. 
-* inversion H0.
-
-rewrite (frob_eq x) in *. apply BisimStepR in H. apply CIH with (b:= Step y); assumption. 
-- assumption. Qed.
 
 Definition const :=nat. 
 
@@ -138,20 +92,13 @@ simpl. rewrite Bind_On_Return. rewrite Bind_On_Return. constructor. Qed.
 Definition delta := Fun (App (Var 0) (Var 0)).
 Definition omega := App delta delta.
 
-Lemma delta_sim: forall e, (bisim (bs omega e)  
-(Step (bs (App (Var 0) (Var 0)) (Clos (App (Var 0) (Var 0)) e :: e)))).
-Proof. Admitted.
-
 Lemma bisim_infinite: forall e, bisim (bs omega e) never.
-Proof. cofix CIH. intros. rewrite frob_eq with (x:=bs omega e). simpl. 
+Proof.  intros. rewrite frob_eq with (x:=bs omega e).  simpl. 
 rewrite frob_eq with (x:=bs delta e). simpl. rewrite Bind_On_Return. 
-rewrite Bind_On_Return. constructor. 
-assert (bisim (bs omega e) (bs (App (Var 0) (Var 0))
-     (Clos (App (Var 0) (Var 0)) e :: e))).
-- rewrite frob_eq with (x:=bs omega e). simpl. rewrite frob_eq with (x:=bs delta e). simpl. rewrite Bind_On_Return. 
-rewrite Bind_On_Return. constructor. apply bisim_refl.
-- apply bisim_trans with (b:=(bs omega e)). apply bisim_symm in H. assumption. apply CIH.  Qed.
-
+rewrite Bind_On_Return. constructor. cofix CIH. 
+ rewrite frob_eq with (x:=(bs (App (Var 0) (Var 0)) (Clos (App (Var 0) (Var 0)) e :: e))). simpl. 
+ rewrite frob_eq with (x:=bs (Var 0) (Clos (App (Var 0) (Var 0)) e :: e)). simpl. rewrite Bind_On_Return. 
+rewrite Bind_On_Return. constructor. apply CIH. Qed.
 
 
 
