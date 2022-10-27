@@ -100,6 +100,38 @@ rewrite Bind_On_Return. constructor. cofix CIH.
  rewrite frob_eq with (x:=bs (Var 0) (Clos (App (Var 0) (Var 0)) e :: e)). simpl. rewrite Bind_On_Return. 
 rewrite Bind_On_Return. constructor. apply CIH. Qed.
 
+Inductive val {A}: Computation A -> A -> Prop :=
+ value_return : forall a:A, val (Return a) a
+| value_step : forall (x:Computation A)(a:A), val x a -> val (Step x) a.
+
+
+CoInductive Eqp {A}: Computation A -> Computation A -> Prop :=
+ eqp_value : forall (x y:Computation A)(a:A), val x a -> val y a -> (Eqp x y)
+| eqp_step : forall (x y:Computation A), Eqp x y -> Eqp (Step x) (Step y)
+| eqp_fail: Eqp Fail Fail.
+
+Theorem eqp_refl {A}: forall (x: A), Eqp (Return x) (Return x).
+Proof.  intros. apply eqp_value with (a:=x).  constructor. constructor. Qed.
+
+Lemma eqp_successful: forall e, Eqp ( bs (Const 2) e) (Return (Int 2)).
+Proof. intros. rewrite frob_eq with (x:=bs (Const 2) e). simpl. apply eqp_refl. Qed.
+
+Lemma eqp_failure: forall e, Eqp (bs (App (Const 1) (Const 2)) e) Fail.
+Proof. intros. rewrite frob_eq with (x:=bs (App (Const 1) (Const 2)) e). simpl.
+rewrite frob_eq with (x:=bs (Const 1) e).
+rewrite frob_eq with (x:=bs (Const 2) e). simpl. rewrite Bind_On_Return. rewrite Bind_On_Return. constructor. Qed.
+
+Lemma eqp_never:  Eqp (Step never) never.
+Proof. cofix CIH. rewrite frob_eq with (x:=never). simpl. constructor. assumption. Qed.
+
+Lemma eqp_infinite: forall e, Eqp (bs omega e) never.
+Proof.  intros. rewrite frob_eq with (x:=bs omega e).  simpl. 
+rewrite frob_eq with (x:=bs delta e). simpl. rewrite Bind_On_Return. 
+rewrite Bind_On_Return. rewrite frob_eq with (x:=never). simpl. constructor. cofix CIH. 
+ rewrite frob_eq with (x:=(bs (App (Var 0) (Var 0)) (Clos (App (Var 0) (Var 0)) e :: e))). simpl. 
+ rewrite frob_eq with (x:=bs (Var 0) (Clos (App (Var 0) (Var 0)) e :: e)). simpl. rewrite Bind_On_Return. 
+rewrite Bind_On_Return.  rewrite frob_eq with (x:=never). simpl. constructor. apply CIH. Qed.
+
 
 
 
