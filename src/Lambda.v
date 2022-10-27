@@ -110,11 +110,12 @@ CoInductive Eqp {A}: Computation A -> Computation A -> Prop :=
 | eqp_step : forall (x y:Computation A), Eqp x y -> Eqp (Step x) (Step y)
 | eqp_fail: Eqp Fail Fail.
 
-Theorem eqp_refl {A}: forall (x: A), Eqp (Return x) (Return x).
+
+Theorem eqp_refl_return {A}: forall (x: A), Eqp (Return x) (Return x).
 Proof.  intros. apply eqp_value with (a:=x).  constructor. constructor. Qed.
 
 Lemma eqp_successful: forall e, Eqp ( bs (Const 2) e) (Return (Int 2)).
-Proof. intros. rewrite frob_eq with (x:=bs (Const 2) e). simpl. apply eqp_refl. Qed.
+Proof. intros. rewrite frob_eq with (x:=bs (Const 2) e). simpl. apply eqp_refl_return. Qed.
 
 Lemma eqp_failure: forall e, Eqp (bs (App (Const 1) (Const 2)) e) Fail.
 Proof. intros. rewrite frob_eq with (x:=bs (App (Const 1) (Const 2)) e). simpl.
