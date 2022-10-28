@@ -56,25 +56,25 @@ repeat (apply CIH in H0; assumption;
 Definition const :=nat. 
 
 Inductive term: Type :=
-  | Var: nat -> term
-  | Const: const -> term
-  | Fun: term -> term
-  | App: term -> term -> term.
+| Var: nat -> term
+| Const: const -> term
+| Fun: term -> term
+| App: term -> term -> term.
 
 Inductive value: Type :=
-  | Int: const -> value
-  | Clos: term -> list value -> value.
+| Int: const -> value
+| Clos: term -> list value -> value.
 
 Definition env := list value.
 
 CoFixpoint bs (t: term) (e:env): (Computation value) :=
 match t with 
- | Const i => Return (Int i)
- | Var n   => match (nth_error e n) with 
-           | Some v => Return v
-           | None   => Fail end
- | Fun a => Return (Clos a e) 
- | App a b => v1 <- bs a e ; v2 <- bs b e ; match v1 with 
+| Const i => Return (Int i)
+| Var n   => match (nth_error e n) with 
+             | Some v => Return v
+             | None   => Fail end
+| Fun a   => Return (Clos a e) 
+| App a b => v1 <- bs a e ; v2 <- bs b e ; match v1 with 
                                     | Int n    => Fail 
                                     | Clos x y => Step (bs x (v2::y))
                                                    end end.
@@ -101,7 +101,7 @@ rewrite Bind_On_Return. constructor. cofix CIH.
 rewrite Bind_On_Return. constructor. apply CIH. Qed.
 
 Inductive val {A}: Computation A -> A -> Prop :=
- value_return : forall a:A, val (Return a) a
+| value_return : forall a:A, val (Return a) a
 | value_step : forall (x:Computation A)(a:A), val x a -> val (Step x) a.
 
 
@@ -129,8 +129,8 @@ Lemma eqp_infinite: forall e, Eqp (bs omega e) never.
 Proof.  intros. rewrite frob_eq with (x:=bs omega e).  simpl. 
 rewrite frob_eq with (x:=bs delta e). simpl. rewrite Bind_On_Return. 
 rewrite Bind_On_Return. rewrite frob_eq with (x:=never). simpl. constructor. cofix CIH. 
- rewrite frob_eq with (x:=(bs (App (Var 0) (Var 0)) (Clos (App (Var 0) (Var 0)) e :: e))). simpl. 
- rewrite frob_eq with (x:=bs (Var 0) (Clos (App (Var 0) (Var 0)) e :: e)). simpl. rewrite Bind_On_Return. 
+rewrite frob_eq with (x:=(bs (App (Var 0) (Var 0)) (Clos (App (Var 0) (Var 0)) e :: e))). simpl. 
+rewrite frob_eq with (x:=bs (Var 0) (Clos (App (Var 0) (Var 0)) e :: e)). simpl. rewrite Bind_On_Return. 
 rewrite Bind_On_Return.  rewrite frob_eq with (x:=never). simpl. constructor. apply CIH. Qed.
 
 
