@@ -41,23 +41,21 @@ Inductive value: Type :=
 | Clos: term -> list value -> value.
 
 Definition env := list value.
-Definition CompFail (A: Type) := Computation (option A).
+Definition ret {A} (x:A) := Return (Some x).
 
-CoFixpoint bs (t: term) (e:env): (CompFail value) :=
+CoFixpoint bs (t: term) (e:env): Computation (option value) :=
 match t with 
- | Const i => Return (Some (Int i))
+ | Const i => ret (Int i)
  | Var n   => match (nth_error e n) with 
-           | Some v => Return (Some v)
+           | Some v => ret v
            | None   => Fail end
- | Fun a => Return (Some (Clos a e))
+ | Fun a => ret (Clos a e)
  | App a b => v1 <- bs a e ; v2 <- bs b e ; match v1 with 
-                                    | None     => Fail
+                                    | None            => Fail
                                     | Some (Int n)    => Fail 
                                     | Some (Clos x y) => match v2 with 
-                                                          | None => Fail 
-                                                          | Some t => Step (bs x (t::y)) end
-
-CoFixpoint never := @Step value never.
+                                                          | None   => Fail 
+                                                          | Some t => Step (bs x (t::y)) end end end .
 
 Inductive val {A}: Computation A -> A -> Prop :=
 | value_return : forall a:A, val (Return a) a
@@ -74,9 +72,6 @@ CoInductive Eqp {A}: Computation A -> Computation A -> Prop :=
 | eqp_value : forall (x y:Computation A)(a:A), val x a -> val y a -> (Eqp x y)
 | eqp_step : forall (x y:Computation A), Eqp x y -> Eqp (Step x) (Step y)
 | eqp_equal: forall (x :Computation A), Eqp x x.
-
-
-Definition ret {A} (x:A) := Return (Some x).
 
 Lemma eqp_successful: forall e, Eqp ( bs (Const 2) e) (ret (Int 2)).
 Proof. intros. rewrite frob_eq with (x:=bs (Const 2) e). simpl. constructor. Qed.
