@@ -31,14 +31,14 @@ Proof. destruct x; reflexivity. Qed.
 Definition const :=nat. 
 
 Inductive term: Type :=
-  | Var: nat -> term
-  | Const: const -> term
-  | Fun: term -> term
-  | App: term -> term -> term.
+| Var: nat -> term
+| Const: const -> term
+| Fun: term -> term
+| App: term -> term -> term.
 
 Inductive value: Type :=
-  | Int: const -> value
-  | Clos: term -> list value -> value.
+| Int: const -> value
+| Clos: term -> list value -> value.
 
 Definition env := list value.
 Definition CompFail (A: Type) := Computation (option A).
@@ -56,7 +56,6 @@ match t with
                                     | Some (Clos x y) => match v2 with 
                                                           | None => Fail 
                                                           | Some t => Step (bs x (t::y)) end
-                                                   end end.
 
 CoFixpoint never := @Step value never.
 
