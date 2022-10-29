@@ -49,8 +49,13 @@ Inductive val {A}: Partial A -> A -> Prop :=
 
 CoInductive Eqp {A}: Partial A -> Partial A -> Prop :=
 | eqp_value : forall (x y:Partial A)(a:A), val x a -> val y a -> (Eqp x y)
-| eqp_step : forall (x y:Partial A), Eqp x y -> Eqp (step x) (step y)
-| eqp_equal: forall (x :Partial A), Eqp x x.
+| eqp_step : forall (x y:Partial A), Eqp x y -> Eqp (step x) (step y).
+
+Lemma eqp_equal: forall {A} (x: Partial A), Eqp x x. 
+Proof. cofix CIH. intros.  destruct x. 
+apply eqp_value with (a:=a); constructor. constructor. apply CIH. Qed. 
+
+
 
 Section park_principle.
 Variable A : Type.
@@ -67,11 +72,11 @@ Proof. cofix CIH.
 intros. destruct m1. destruct m2. 
 apply H in H0.
 destruct H0.
-inversion H0. destruct  H1. inversion H1. inversion H2.
-constructor.
+inversion H0. destruct  H1. inversion H1. inversion H2. auto. 
+apply eqp_equal.
 destruct H0. inversion H0. inversion H1.
 destruct H2. destruct H3. inversion H2.
-rewrite H0. constructor.
+rewrite H0. apply eqp_equal.
 
 apply H in H0. destruct H0. destruct H0. destruct H0. 
 apply eqp_value with (a:=x); assumption.
@@ -83,7 +88,7 @@ apply eqp_value with (a:=x); assumption.
 destruct H0. destruct H0. destruct H0. destruct H0. destruct H1.
 rewrite H0. rewrite H1. constructor. apply CIH. assumption. 
 
-rewrite H0. constructor. Qed.
+rewrite H0. apply eqp_equal. Qed.
 End park_principle.
 
 Theorem partial_eqp_frob : forall A (m1 m2 : Partial A),
@@ -92,8 +97,8 @@ Proof. intros. assert (frob m1 = m1). rewrite frob_eq. reflexivity.
 assert (frob m2 = m2). rewrite frob_eq. reflexivity. 
 rewrite <- H0. rewrite <- H1. assumption. Qed.
 
-Ltac eval_ R :=  rewrite frob_eq with (x:=R); simpl; try constructor.
-Ltac finish_with R :=  try constructor; apply R.
+Ltac eval_ R :=  rewrite frob_eq with (x:=R); simpl; try (apply eqp_equal).
+Ltac finish_with R := try constructor; try (apply eqp_equal); apply R.
 
 (* Functor axioms *) 
 Theorem map_id_eq: forall A (m: Partial A), Eqp (map id m) m.
@@ -126,7 +131,7 @@ destruct w. destruct v. destruct t.
 - eval_ (pure compose <*> rtrn c0 <*> rtrn b0 <*> rtrn a0).
 eval_ (rtrn c0 <*> (rtrn b0 <*> rtrn a0)).
 - eval_ (pure compose <*> step t <*> rtrn b0 <*> rtrn a0). 
-eval_ (apply (step t) (apply (rtrn b0) (rtrn a0))). finish_with CIH.
+eval_ (apply (step t) (apply (rtrn b0) (rtrn a0))). constructor.  finish_with CIH.
 - eval_ (apply (apply (apply (pure compose) t) (step v)) (rtrn a0)).
  eval_ (apply t (apply (step v) (rtrn a0))). finish_with CIH. 
 - eval_ (apply (apply (apply (pure compose) t) v) (step w)). 
@@ -158,28 +163,28 @@ eval_ (apply (pure g) (step x)). finish_with CIH. Qed.
 Theorem bindleft_identity : forall A B (a : A) (f : A -> Partial B),
   Eqp (bind f (rtrn a)) (f a).
 Proof. 
-intros. eval_ (bind f (rtrn a)). destruct (f a); repeat constructor. Qed.
+intros. eval_ (bind f (rtrn a)). destruct (f a); apply eqp_equal. Qed.
 
 Theorem bindright_identity : forall A (m : Partial A),
   Eqp (bind ret m) m.
 Proof. cofix CIH.  intros.   
-eval_ (bind ret m); destruct m; repeat constructor. finish_with CIH. Qed.
+eval_ (bind ret m).  destruct m.  apply eqp_equal. finish_with CIH. Qed.
 
 Theorem bind_assoc : forall A B C (m : Partial A) 
 (f : A -> Partial B) (g : B -> Partial C),
   Eqp (bind g (bind  f m)) (bind (fun x => bind g (f x)) m).
 Proof. cofix CIH.  
-intros. eval_ (bind g (bind f m)).
-eval_ (bind (fun x : A => bind g (f x)) m). destruct m; repeat constructor. 
-finish_with CIH. Qed.
+intros. destruct m. eval_ ((bind (fun x : A => bind g (f x))
+     (rtrn a))).  eval_ (bind g (bind f (rtrn a))).
+eval_ (bind g (bind f (step m))). eval_ (bind (fun x : A => bind g (f x))
+     (step m)). constructor. finish_with CIH.  Qed.
 
 Theorem partial_bind_map: forall {a b} (x : Partial a) (f : a -> b),
      Eqp (map f x)  (bind (fun y => pure (f y)) x).
 Proof. cofix CIH.  
 intros. eval_ (map f x);
-eval_ (bind (fun y : a => pure (f y)) x). destruct x; repeat constructor. 
-finish_with CIH. Qed.
- 
+eval_ (bind (fun y : a => pure (f y)) x). destruct x. 
+eval_ (pure (f a0)). constructor.  finish_with CIH. Qed. 
 
 
 
