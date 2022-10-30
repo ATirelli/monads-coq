@@ -27,6 +27,7 @@ match x with
 
 Lemma frob_eq {A}: forall (x: Computation A), x = frob x.
 Proof. destruct x; reflexivity. Qed.
+Ltac eval_ R :=  rewrite frob_eq with (x:=R); simpl; try (constructor).
 
 Definition const :=nat. 
 
@@ -74,28 +75,29 @@ CoInductive Eqp {A}: Computation A -> Computation A -> Prop :=
 | eqp_equal: forall (x :Computation A), Eqp x x.
 
 Lemma eqp_successful: forall e, Eqp ( bs (Const 2) e) (ret (Int 2)).
-Proof. intros. rewrite frob_eq with (x:=bs (Const 2) e). simpl. constructor. Qed.
+Proof. intros. eval_ (bs (Const 2) e). Qed.
 
 Lemma eqp_failure: forall e, Eqp (bs (App (Const 1) (Const 2)) e) Fail.
-Proof. intros. rewrite frob_eq with (x:=bs (App (Const 1) (Const 2)) e). simpl.
-rewrite frob_eq with (x:=bs (Const 1) e).
-rewrite frob_eq with (x:=bs (Const 2) e). simpl. rewrite Bind_On_Return. rewrite Bind_On_Return. constructor. Qed.
+Proof. intros. eval_ (bs (App (Const 1) (Const 2)) e).
+eval_ (bs (Const 1) e).
+eval_ (bs (Const 2) e). rewrite Bind_On_Return. 
+rewrite Bind_On_Return. constructor. Qed.
 
 CoFixpoint Never := @Step (option value) Never.
 
 Lemma eqp_never:  Eqp (Step Never) Never.
-Proof. cofix CIH. rewrite frob_eq with (x:=Never). simpl. constructor. assumption. Qed.
+Proof. cofix CIH. eval_ (Never). assumption. Qed.
 
 Definition delta := Fun (App (Var 0) (Var 0)).
 Definition omega := App delta delta.
 
 Lemma eqp_infinite: forall e, Eqp (bs omega e) Never.
-Proof.  intros. rewrite frob_eq with (x:=bs omega e).  simpl. 
-rewrite frob_eq with (x:=bs delta e). simpl. rewrite Bind_On_Return. 
-rewrite Bind_On_Return. rewrite frob_eq with (x:=Never). simpl. constructor. cofix CIH. 
-rewrite frob_eq with (x:=(bs (App (Var 0) (Var 0)) (Clos (App (Var 0) (Var 0)) e :: e))). simpl. 
-rewrite frob_eq with (x:=bs (Var 0) (Clos (App (Var 0) (Var 0)) e :: e)). simpl. rewrite Bind_On_Return. 
-rewrite Bind_On_Return.  rewrite frob_eq with (x:=Never). simpl. constructor. apply CIH. Qed.
+Proof.  intros. eval_ (bs omega e). 
+eval_ (bs delta e). rewrite Bind_On_Return. 
+rewrite Bind_On_Return. eval_ (Never). cofix CIH. 
+eval_ (bs (App (Var 0) (Var 0)) (Clos (App (Var 0) (Var 0)) e :: e)). 
+eval_ (bs (Var 0) (Clos (App (Var 0) (Var 0)) e :: e)). rewrite Bind_On_Return. 
+rewrite Bind_On_Return. eval_ (Never). apply CIH. Qed.
 
 
 
