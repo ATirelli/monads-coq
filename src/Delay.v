@@ -87,13 +87,15 @@ intros A x a H; inversion_clear H.
 rewrite partial_basic_13 with (a1:=a) (a2:=a0); assumption.
 Qed.
 
-Lemma partial_basic_14 : forall {A} (x:Partial A), x [=] x.
-Proof.
-Admitted. 
+Lemma eqp_refl: forall {A} (x: Partial A), Eqp x x. 
+Proof. cofix CIH. intros.  destruct x. 
+apply eqp_value with (a:=a); constructor. constructor. apply CIH. Qed. 
 
-Lemma eqp_symm : forall {A} (x y:Partial A), x [=] y -> y [=] x.
-Proof.
-Admitted. 
+Lemma eqp_sym: forall {A} (x y: Partial A), Eqp x y -> Eqp y x. 
+Proof. cofix CIH. intros. inversion H. 
+- apply eqp_value with (a:=a); assumption. 
+- constructor. apply CIH in H0. assumption. Qed.
+
 
 Lemma partial_basic_7 : forall {A} (x:(Partial A))(a:A), |>x~>a -> x~>a.
 Proof.
@@ -119,50 +121,13 @@ Lemma partial_basic_3 : forall {A} (x y:(Partial A))(a:A), x~>a -> x [=] y -> y~
 Proof.
 intros A x y a Hx; elim Hx.
 intros a0 H0; apply partial_basic_6.
-apply eqp_symm; assumption.
+apply eqp_sym; assumption.
 
 intros x0 a0 H0 IH Heq.
 apply IH; apply partial_basic_12; assumption.
 Qed.
 
-(*Lemma partial_basic_8 : forall {A} (x:Partial A), |>x~^ -> x~^.
-Proof.
-intros A x Hx; inversion_clear Hx.
-assumption.
-Qed.
 
-Lemma partial_basic_9 : forall {A} (x:(Partial A))(a:A), x~>a -> ~ x~^.
-Proof.
-intros  A x a H; elim H.
-intros a0 H0; inversion H0.
-
-intros x0 a0 H0 IH H1.
-apply IH; apply partial_basic_8; assumption.
-Qed.
-
-Lemma partial_basic_4 : forall {A} (x y:Partial A), x~^ -> x [=] y -> y~^.
-Proof.
-cofix H.
-intros A x y Hx Heq.
-generalize Hx; inversion_clear Heq.
-elim partial_basic_9 with (x:=x)(a:=a); assumption.
-intro H1; apply diverge.
-apply H with (x:=x0); [apply partial_basic_8|idtac]; assumption.
-Qed.
-
-Lemma partial_basic_10 : forall {A} (x y:(Partial A))(a:A), x~>a -> y~^ -> ~ x[=]y.
-Proof.
-intros A x y a H; elim H.
-intros a0 H0 H1.
-apply partial_basic_9 with (x:=y)(a:=a0).
-apply partial_basic_6; apply eqp_symm; assumption.
-assumption.
-
-intros x0 a0 H0 IH H1 H2; apply IH.
-assumption.
-apply partial_basic_12; assumption.
-Qed.
-*)
 Lemma eqp_trans : forall {A} (x y z:Partial A), x [=] y -> y [=] z -> x [=] z.
 Proof.
 cofix H.
@@ -174,19 +139,11 @@ apply partial_basic_3 with (x:=y); assumption.
 intro Hyz; inversion_clear Hyz.
 apply partial_basic_1 with (a:=a); [idtac|assumption].
 apply partial_basic_3 with (x:=|>y0); [assumption|apply eqp_step].
-apply eqp_symm; assumption.
+apply eqp_sym; assumption.
 
 apply eqp_step; apply H with (y:=y0); assumption.
 Qed.
 
-Lemma eqp_refl: forall {A} (x: Partial A), Eqp x x. 
-Proof. cofix CIH. intros.  destruct x. 
-apply eqp_value with (a:=a); constructor. constructor. apply CIH. Qed. 
-
-Lemma eqp_sym: forall {A} (x y: Partial A), Eqp x y -> Eqp y x. 
-Proof. cofix CIH. intros. inversion H. 
-- apply eqp_value with (a:=a); assumption. 
-- constructor. apply CIH in H0. assumption. Qed.
 
 Lemma val_det: forall {A}  (a b: A) (x: Partial A), val x a -> val x b -> a = b. 
 Proof. intros. induction H. 
