@@ -29,6 +29,7 @@ Lemma frob_eq {A}: forall (x: Computation A), x = frob x.
 Proof. destruct x; reflexivity. Qed.
 Ltac eval_ R :=  rewrite frob_eq with (x:=R); simpl; try (constructor).
 
+
 Definition const :=nat. 
 
 Inductive term: Type :=
@@ -75,7 +76,11 @@ CoInductive Eqp {A}: Computation A -> Computation A -> Prop :=
 Eqp x y ->  Eqp (f b) (g b) -> Eqp (Bind x f) (Bind y g).
 
 Lemma eqp_step : forall {A} (x y:Computation A), Eqp x y -> Eqp (Step x) (Step y).
-Proof. intros. eval_ (Step x). now auto. apply eqp_value with (a:=tt); constructor. assumption. Qed.
+Proof. intros. eval_ (Step x). now auto. unfold not. intros. 
+apply eqp_value with (a:=tt); constructor. assumption. Qed.
+
+Ltac apply_eqp_step := constructor; now auto;
+apply eqp_value with (a:=tt); constructor.
 
 Lemma eqp_equal_ret: forall {A} (x : A), Eqp (Return x) (Return x).
 Proof. intros. apply eqp_value with (a:=x); constructor. Qed.
@@ -84,7 +89,7 @@ Proof. intros. apply eqp_value with (a:=x); constructor. Qed.
 Lemma eqp_equal: forall {A} (x :Computation A), Eqp x x.
 Proof. cofix CIH. intros. destruct x.
 - apply eqp_value with (a:=a); constructor.
-- eapply eqp_bind. apply CIH. apply CIH. Guarded. Admitted. 
+- eapply eqp_bind; apply CIH. Admitted. 
 
 Lemma eqp_successful: forall e, Eqp ( bs (Const 2) e) (ret (Int 2)).
 Proof. intros. eval_ (bs (Const 2) e). apply eqp_equal_ret.  Qed.
@@ -98,7 +103,7 @@ rewrite Bind_On_Return. apply eqp_equal_ret. Qed.
 CoFixpoint Never := @Step (option value) Never.
 
 Lemma eqp_never:  Eqp (Step Never) Never.
-Proof. cofix CIH. rewrite frob_eq with (x:=Never). simpl. constructor. now auto.
+Proof. cofix CIH. rewrite frob_eq with (x:=Never). simpl.  constructor. now auto.
 apply eqp_value with (a:=tt); constructor. assumption. Qed.
 
 Definition delta := Fun (App (Var 0) (Var 0)).

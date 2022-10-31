@@ -50,7 +50,9 @@ Inductive val {A}: Partial A -> A -> Prop :=
 CoInductive Eqp {A}: Partial A -> Partial A -> Prop :=
 | eqp_value : forall (x y:Partial A)(a:A), val x a -> val y a -> (Eqp x y)
 | eqp_step : forall (x y:Partial A), Eqp x y -> Eqp (step x) (step y).
-Notation "^ a " := (rtrn a) (at level 0).
+
+Axiom eqp_is_eq : forall {A: Type} (x y: Partial A), Eqp x y -> x = y.
+Notation "^ a " := (rtrn a) (at level 0). 
 Notation "|> x" := (step x) (at level 0, right associativity).
 
 Notation "x ~> a" := (val x a) (at level 71).
@@ -281,10 +283,41 @@ eval_ (bind (fun y : a => pure (f y)) x). destruct x.
 eval_ (pure (f a0)). constructor.  finish_with CIH. Qed. 
 
 
+#[program]
+Instance partial_Functor: Functor (Partial) :=
+  { map := @map  
+  }.
+Next Obligation. apply eqp_is_eq. apply map_id_eq. Qed.
+Next Obligation. apply eqp_is_eq. apply map_assoc. Qed.
 
+#[program]
+Instance partial_Applicative 
+  : Applicative (Partial ) :=
+  { pure := @pure 
+  ; apply := @apply  
+  }.
+Next Obligation. apply eqp_is_eq. apply partial_applicative_identity. Qed.
+Next Obligation. apply eqp_is_eq. apply partial_applicative_composition. Qed.
+Next Obligation. apply eqp_is_eq. eval_ (pure v <*> pure x). Qed.
+Next Obligation. apply eqp_is_eq. apply partial_applicative_interchange. Qed.
+Next Obligation. apply eqp_is_eq. apply partial_applicative_pure_map. Qed.
 
+Definition bind_m {a b} (x: Partial a) (f: a -> Partial b) : Partial b := 
+bind f x.
 
-
+#[program]
+Instance partial_Monad : Monad (Partial) :=
+  { bind := @bind_m 
+  }.
+Next Obligation. unfold bind_m. apply eqp_is_eq. 
+eval_ (bind f (pure x) ). destruct (f x); apply eqp_refl. Qed.
+Next Obligation. unfold bind_m. apply eqp_is_eq. 
+generalize dependent x. cofix CIH. destruct x. 
+eval_ (bind (fun y : a => pure y) (rtrn a0)). 
+eval_ ((bind (fun y : a => pure y) (step x))).
+apply eqp_step. apply CIH. Qed.
+Next Obligation. unfold bind_m. apply eqp_is_eq. apply bind_assoc. Qed.
+Next Obligation. unfold bind_m. apply eqp_is_eq. apply partial_bind_map. Qed.
 
 
 
