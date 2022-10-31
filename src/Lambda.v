@@ -71,22 +71,35 @@ Proof. intros. induction H.
 
 CoInductive Eqp {A}: Computation A -> Computation A -> Prop :=
 | eqp_value : forall (x y:Computation A)(a:A), val x a -> val y a -> (Eqp x y)
-| eqp_step : forall (x y:Computation A), Eqp x y -> Eqp (Step x) (Step y)
-| eqp_equal: forall (x :Computation A), Eqp x x.
+| eqp_bind: forall (B: Type) (x y: Computation B) (f g: B -> Computation A) (b: B),
+Eqp x y ->  Eqp (f b) (g b) -> Eqp (Bind x f) (Bind y g).
+
+Lemma eqp_step : forall {A} (x y:Computation A), Eqp x y -> Eqp (Step x) (Step y).
+Proof. intros. eval_ (Step x). now auto. apply eqp_value with (a:=tt); constructor. assumption. Qed.
+
+Lemma eqp_equal_ret: forall {A} (x : A), Eqp (Return x) (Return x).
+Proof. intros. apply eqp_value with (a:=x); constructor. Qed.
+
+
+Lemma eqp_equal: forall {A} (x :Computation A), Eqp x x.
+Proof. cofix CIH. intros. destruct x.
+- apply eqp_value with (a:=a); constructor.
+- eapply eqp_bind. apply CIH. apply CIH. Guarded. Admitted. 
 
 Lemma eqp_successful: forall e, Eqp ( bs (Const 2) e) (ret (Int 2)).
-Proof. intros. eval_ (bs (Const 2) e). Qed.
+Proof. intros. eval_ (bs (Const 2) e). apply eqp_equal_ret.  Qed.
 
 Lemma eqp_failure: forall e, Eqp (bs (App (Const 1) (Const 2)) e) Fail.
 Proof. intros. eval_ (bs (App (Const 1) (Const 2)) e).
 eval_ (bs (Const 1) e).
 eval_ (bs (Const 2) e). rewrite Bind_On_Return. 
-rewrite Bind_On_Return. constructor. Qed.
+rewrite Bind_On_Return. apply eqp_equal_ret. Qed.
 
 CoFixpoint Never := @Step (option value) Never.
 
 Lemma eqp_never:  Eqp (Step Never) Never.
-Proof. cofix CIH. eval_ (Never). assumption. Qed.
+Proof. cofix CIH. rewrite frob_eq with (x:=Never). simpl. constructor. now auto.
+apply eqp_value with (a:=tt); constructor. assumption. Qed.
 
 Definition delta := Fun (App (Var 0) (Var 0)).
 Definition omega := App delta delta.
@@ -94,10 +107,12 @@ Definition omega := App delta delta.
 Lemma eqp_infinite: forall e, Eqp (bs omega e) Never.
 Proof.  intros. eval_ (bs omega e). 
 eval_ (bs delta e). rewrite Bind_On_Return. 
-rewrite Bind_On_Return. eval_ (Never). cofix CIH. 
+rewrite Bind_On_Return. eval_ (Never). now auto.
+apply eqp_value with (a:=tt); constructor. cofix CIH. 
 eval_ (bs (App (Var 0) (Var 0)) (Clos (App (Var 0) (Var 0)) e :: e)). 
 eval_ (bs (Var 0) (Clos (App (Var 0) (Var 0)) e :: e)). rewrite Bind_On_Return. 
-rewrite Bind_On_Return. eval_ (Never). apply CIH. Qed.
+rewrite Bind_On_Return. eval_ (Never). now auto.
+apply eqp_value with (a:=tt); constructor. apply CIH. Qed.
 
 
 
