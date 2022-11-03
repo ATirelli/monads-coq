@@ -1,5 +1,3 @@
-Add LoadPath "./" as Monads .
-(*Require Import Monads.StateMonad.*)
 Require Import Monads.FunctorApplicativeMonad.
 
 From Coq Require Import FunctionalExtensionality Program.Basics.
@@ -12,8 +10,6 @@ Set Universe Polymorphism.
 Close Scope nat_scope.
 #[local]
 Open Scope prelude_scope.
-
-(** * Definition *)
 
 Lemma pair_fst_snd {a b} (x: a*b): (fst x, snd x) = x.
 Proof. destruct x. unfold fst, snd. trivial. Qed.

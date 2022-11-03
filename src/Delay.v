@@ -1,6 +1,5 @@
 Set Implicit Arguments.
 
-Require Import Monads.Tactics.
 Require Import Monads.FunctorApplicativeMonad.
 
 

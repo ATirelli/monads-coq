@@ -1,7 +1,4 @@
-Add LoadPath "./" as Monads .
-(*Require Import Monads.FunctorApplicativeMonad.*)
 Require Import Monads.ExnMonad.
-(*Require Import Monads.ExnTransformer.*)
 Require Import NPeano Arith Bool String List.
 
 Definition state:= string -> nat.
