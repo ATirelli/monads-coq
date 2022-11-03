@@ -159,8 +159,7 @@ Variable P : Partial A -> Partial A -> Prop.
 
 Hypothesis H : forall m1 m2, P m1 m2
 -> (exists a, (val m1 a) /\ (val m2 a)) \/
-   (exists x1, exists x2, (m1 = step x1) /\ (m2 = step x2) /\ (P x1 x2)) \/
-   (m1 = m2).
+   (exists x1, exists x2, (m1 = step x1) /\ (m2 = step x2) /\ (P x1 x2)).
 
 
 Theorem park_principle : forall m1 m2, P m1 m2 -> Eqp m1 m2.
@@ -168,23 +167,15 @@ Proof. cofix CIH.
 intros. destruct m1. destruct m2. 
 apply H in H0.
 destruct H0.
-inversion H0. destruct  H1. inversion H1. inversion H2. auto. 
-apply eqp_refl.
-destruct H0. inversion H0. inversion H1.
-destruct H2. destruct H3. inversion H2.
-rewrite H0. apply eqp_refl.
+inversion H0. destruct  H1. inversion H1. inversion H2. apply eqp_refl. 
+destruct H0. destruct H0.  destruct H0. destruct H1. inversion H1.
+apply H in H0.  destruct H0.  destruct H0. destruct H0. apply eqp_value with (a:=x); assumption.
+destruct H0. destruct H0. destruct H0. inversion H0.  
 
-apply H in H0. destruct H0. destruct H0. destruct H0. 
-apply eqp_value with (a:=x); assumption.
-destruct H0. destruct H0. destruct H0. destruct H0. inversion H0.
-inversion H0.
-
-apply H in H0. destruct H0. destruct H0. destruct H0. 
-apply eqp_value with (a:=x); assumption.
-destruct H0. destruct H0. destruct H0. destruct H0. destruct H1.
-rewrite H0. rewrite H1. constructor. apply CIH. assumption. 
-
-rewrite H0. apply eqp_refl. Qed.
+apply H in H0.  destruct H0. destruct H0. destruct H0. 
+apply eqp_value with (a:=x); assumption. destruct H0.  destruct H0. 
+destruct H0. rewrite H0. destruct H1. rewrite H1. constructor. apply CIH; assumption. 
+Qed.
 End park_principle.
 
 Theorem partial_eqp_frob : forall A (m1 m2 : Partial A),
@@ -315,7 +306,7 @@ Next Obligation. unfold bind_m. apply eqp_is_eq.
 generalize dependent x. cofix CIH. destruct x. 
 eval_ (bind (fun y : a => pure y) (rtrn a0)). 
 eval_ ((bind (fun y : a => pure y) (step x))).
-apply eqp_step. apply CIH. Qed.
+finish_with CIH. Qed.
 Next Obligation. unfold bind_m. apply eqp_is_eq. apply bind_assoc. Qed.
 Next Obligation. unfold bind_m. apply eqp_is_eq. apply partial_bind_map. Qed.
 

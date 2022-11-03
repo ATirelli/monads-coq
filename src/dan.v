@@ -32,7 +32,7 @@ Arguments WFail {A}.
 
 
 (* must be a cofix/fix combo -- but for some reason itìs not defined, so I cannot use it later *)
-Program CoFixpoint whnf {A:Type} (cp : CP A)  : CW A :=
+(*Program CoFixpoint whnf {A:Type} (cp : CP A)  : CW A :=
   match cp with
   | PFail => WFail 
   | PReturn x => WReturn x
@@ -50,7 +50,7 @@ with
 Next Obligation.
   - auto.
     Defined.
-
+*)
 
 (*
       ⟪_⟫W : ∀ {A} → Maybe A ⊥W → Maybe A ⊥
@@ -62,7 +62,7 @@ Next Obligation.
     ⟪ p ⟫P = ⟪ whnf p ⟫W
 *)
 
-CoFixpoint execW {A}(w : CW A) : C (option A) :=
+(*CoFixpoint execW {A}(w : CW A) : C (option A) :=
   match w with
   |WFail => Return None
   |WReturn x => Return (Some x)
@@ -70,5 +70,5 @@ CoFixpoint execW {A}(w : CW A) : C (option A) :=
 with
 execP {A}(p : CP A) : C (option A) :=
   execW (whnf p).  (* undefined *)
-                   
+  *)                 
 
