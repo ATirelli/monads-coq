@@ -182,7 +182,7 @@ match c with
 
       | <{ while b1 do c' end }> =>
           v <- Return (beval st b1); match v with 
-                                        | true  => st' <- ceval_comp st c'; ceval_comp st' c
+                                        | true  => st' <- ceval_comp st c'; Step (ceval_comp st' c)
                                         | false => Return st end
           
 end.
@@ -219,7 +219,15 @@ Definition test_ceval (st:state) (c:com) :=
   | Some st => Some (st X, st Y, st Z)
   end.
 
+Definition P:= <{while true do skip end}>.
 
-Eval compute in (test_ceval empty_st
+CoFixpoint Never:= @Step (state) Never.
 
-     <{ X := 2}>).
+Theorem P_is_never: forall st, Eqp (ceval_comp st P) Never.
+Proof. intros. cofix CIH. eval_ (ceval_comp st P).   
+rewrite Bind_On_Return.
+eval_ ((ceval_comp st CSkip)).
+rewrite Bind_On_Return. eval_ (Never).
+ now auto.
+apply eqp_value with (a:=tt); constructor. apply CIH. Guarded. Qed.
+
