@@ -149,4 +149,3 @@ apply eqp_value with (a:=tt); constructor. apply CIH. Qed.
 
 
 
-
