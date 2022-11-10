@@ -166,28 +166,7 @@ Notation "'LETOPT' x <== e1 'IN' e2"
          | None => None
        end)
    (right associativity, at level 60).
-
-CoFixpoint ceval_comp (st : state) (c : com) : Computation state :=
-match c with
-      | <{ skip }> =>
-          Return st
-      | <{ l := a1 }> =>
-          Return (t_update st l (aeval st a1))
-      | <{ c1 ; c2 }> =>
-          st' <- ceval_comp st c1 ; ceval_comp st' c2
-      | <{ if b then c1 else c2 end }> =>
-           v <- Return (beval st b); match v with 
-                                        | true  => ceval_comp st c1
-                                        | false => ceval_comp st c2 end
-
-      | <{ while b1 do c' end }> =>
-          v <- Return (beval st b1); match v with 
-                                        | true  => st' <- ceval_comp st c'; Step (ceval_comp st' c)
-                                        | false => Return st end
-          
-end.
-
-
+   
 Fixpoint ceval_step (st : state) (c : com) (i : nat) {struct i}
                     : option state :=
   match i with
@@ -219,15 +198,36 @@ Definition test_ceval (st:state) (c:com) :=
   | Some st => Some (st X, st Y, st Z)
   end.
 
+CoFixpoint ceval_comp (st : state) (c : com) : Computation state :=
+match c with
+      | <{ skip }> =>
+          Return st
+      | <{ l := a1 }> =>
+          Return (t_update st l (aeval st a1))
+      | <{ c1 ; c2 }> =>
+          st' <- ceval_comp st c1 ; ceval_comp st' c2
+      | <{ if b then c1 else c2 end }> =>
+           v <- Return (beval st b); match v with 
+                                        | true  => ceval_comp st c1
+                                        | false => ceval_comp st c2 end
+
+      | <{ while b1 do c' end }> =>
+          v <- Return (beval st b1); match v with 
+                                        | true  => st' <- ceval_comp st c'; Step (ceval_comp st' c)
+                                        | false => Return st end
+          
+end.
+
+
 Definition P:= <{while true do skip end}>.
 
 CoFixpoint Never:= @Step (state) Never.
 
 Theorem P_is_never: forall st, Eqp (ceval_comp st P) Never.
-Proof. intros. cofix CIH. eval_ (ceval_comp st P).   
+Proof. intros. cofix CIH. eval_ (ceval_comp st P).
 rewrite Bind_On_Return.
 eval_ ((ceval_comp st CSkip)).
 rewrite Bind_On_Return. eval_ (Never).
  now auto.
-apply eqp_value with (a:=tt); constructor. apply CIH. Guarded. Qed.
+apply eqp_value with (a:=tt); constructor. apply CIH. Qed.
 
