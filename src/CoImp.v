@@ -9,7 +9,12 @@ From Coq Require Import Strings.String.
 Import ListNotations.
 Require Import Monads.Computation.
 
+(** * IMP *)
 
+(** We now turn our attention to _IMP_, a simple - yet Turing complete - 
+imperative language, where we can compute simple arithmetic expressions, 
+assign vaalues to variable and perform _potentially non terminating_ loops
+through the [While] constructor. *)
 (*Maps*)
 Definition total_map (A : Type) := string -> A.
 
@@ -131,6 +136,11 @@ Reserved Notation
          (at level 40, c custom com at level 99,
           st constr, st' constr at next level).
 
+(** As we all know, we can define define the relational version BSOS for IMP 
+as follows. One disadvantage of this approach is that it considers only _terminating_
+programs, i.e. there cannot no proposition of the form [ceval P st1 st2] is provable 
+if [P] is a non terminating program. *)
+
 Inductive ceval : com -> state -> state -> Prop :=
   | E_Skip : forall st,
       st =[ skip ]=> st
@@ -167,6 +177,7 @@ Notation "'LETOPT' x <== e1 'IN' e2"
        end)
    (right associativity, at level 60).
    
+(** One possibility to _partially_ evaluat *)
 Fixpoint ceval_step (st : state) (c : com) (i : nat) {struct i}
                     : option state :=
   match i with
