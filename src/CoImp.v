@@ -6,6 +6,7 @@ From Coq Require Import Arith.EqNat.
 From Coq Require Import Lia.
 From Coq Require Import Lists.List.
 From Coq Require Import Strings.String.
+From Coq Require Import FunctionalExtensionality.
 Import ListNotations.
 Require Import Monads.Computation.
 
@@ -15,6 +16,7 @@ Require Import Monads.Computation.
 imperative language, where we can compute simple arithmetic expressions, 
 assign vaalues to variable and perform _potentially non terminating_ loops
 through the [While] constructor. *)
+
 (*Maps*)
 Definition total_map (A : Type) := string -> A.
 
@@ -177,7 +179,11 @@ Notation "'LETOPT' x <== e1 'IN' e2"
        end)
    (right associativity, at level 60).
    
-(** One possibility to _partially_ evaluat *)
+(** One possibility to _partially_ evaluate general IMP programs using the standard 
+_gas_ construction below, where the BSOS function takes as a further argument a [nat] i 
+which is the number of reduction steps we allow. Note that for any non-terminating program 
+the output of [ceval_step] will be [None] regardless of the gas parameter. *)
+
 Fixpoint ceval_step (st : state) (c : com) (i : nat) {struct i}
                     : option state :=
   match i with
@@ -209,6 +215,10 @@ Definition test_ceval (st:state) (c:com) :=
   | Some st => Some (st X, st Y, st Z)
   end.
 
+(** * IMP BSOS with [Computation]*)
+(** Using [Computation] we can write a total _function_ that computes the BSOS 
+of any IMP program, regardless of whether the program terminates or not *)
+
 CoFixpoint ceval_comp (st : state) (c : com) : Computation state :=
 match c with
       | <{ skip }> =>
@@ -230,15 +240,50 @@ match c with
 end.
 
 
-Definition P:= <{while true do skip end}>.
+Definition Loop:= <{while true do skip end}>. 
+Definition NonTrivialLoop:= <{while 0<=X do X:=X+1 end}>. 
 
 CoFixpoint Never:= @Step (state) Never.
 
-Theorem P_is_never: forall st, Eqp (ceval_comp st P) Never.
-Proof. intros. cofix CIH. eval_ (ceval_comp st P).
+Definition P:= <{X:=0; while X=0 do X:=X + 1 end }>.
+Definition stP:= X !-> 1.
+
+Theorem P_evals_to_stP: Eqp (ceval_comp empty_st P) (Return stP).
+Proof. 
+eval_ (ceval_comp empty_st P).
+eval_ (ceval_comp empty_st <{ X := 0 }>). rewrite Bind_On_Return.
+eval_ (ceval_comp (X !-> 0) <{ while X = 0 do X := X + 1 end }>).
+rewrite Bind_On_Return. eval_( ceval_comp (X !-> 0) <{ X := X + 1 }>).
+rewrite Bind_On_Return. 
+eval_ ((ceval_comp (t_update (X !-> 0) X 1) <{ while X = 0 do X := X + 1 end }>)).
+rewrite Bind_On_Return. apply eqp_value with (a:= stP). 
+- apply value_step. assert ((t_update (X !-> 0) X 1)= stP). 
+  apply functional_extensionality; intros; unfold stP; unfold t_update; 
+destruct (eqb_string X x); reflexivity.
+  rewrite H. constructor. 
+- constructor. Qed.  
+  
+
+Theorem Loop_is_never: forall st, Eqp (ceval_comp st Loop) Never.
+Proof. 
+intros. cofix CIH. eval_ (ceval_comp st Loop).
 rewrite Bind_On_Return.
 eval_ ((ceval_comp st CSkip)).
 rewrite Bind_On_Return. eval_ (Never).
  now auto.
 apply eqp_value with (a:=tt); constructor. apply CIH. Qed.
+
+Theorem Loop_is_NonTrivialLoop: 
+forall st1 st2, Eqp (ceval_comp st1 Loop) (ceval_comp st2 NonTrivialLoop). 
+Proof. 
+cofix CIH. intros.   
+eval_ ((ceval_comp st1 Loop)). rewrite Bind_On_Return. 
+eval_ (ceval_comp st1 <{ skip }>).  rewrite Bind_On_Return.
+eval_ (ceval_comp st2 NonTrivialLoop). 
+rewrite Bind_On_Return. 
+eval_ (ceval_comp st2 <{ X := X + 1 }>).
+rewrite Bind_On_Return. 
+constructor. now auto. apply eqp_value with (a:=tt); constructor.    
+unfold NonTrivialLoop in CIH. 
+apply CIH with (st1:=st1) (st2:=(t_update st2 X (st2 X + 1))). Qed. 
 

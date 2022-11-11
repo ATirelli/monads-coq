@@ -208,9 +208,11 @@ Ltac finish_with R := try constructor; try (apply eqp_refl); apply R.
 
 (* Functor axioms *) 
 Theorem map_id_eq: forall A (m: Partial A), Eqp (map id m) m.
-cofix CIH.  destruct m. 
+Proof. 
+cofix CIH. destruct m. 
 - eval_ (map id (rtrn a)).
-- eval_ (map id (step m)). finish_with  CIH. Qed.
+- eval_ (map id (step m)). finish_with CIH. Qed.
+
 
 Theorem map_assoc: forall A B C (m: Partial A) (f: A -> B) (g: B -> C), 
 Eqp (map (g <<< f) m) (map g (map f m)).
