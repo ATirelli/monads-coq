@@ -33,6 +33,10 @@ match x with
 | rtrn y => f y 
 | step t => step (bind f t) end.
 
+Notation "var <=== c ; rest" :=
+(bind (fun var => rest) c)
+(at level 60, right associativity).
+
 Definition ret {a} (x: a): Partial a := rtrn x.
 
 

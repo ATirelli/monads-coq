@@ -8,7 +8,9 @@ From Coq Require Import Lists.List.
 From Coq Require Import Strings.String.
 From Coq Require Import FunctionalExtensionality.
 Import ListNotations.
+Require Import Monads.Delay.
 Require Import Monads.Computation.
+
 
 (** * IMP *)
 
@@ -244,46 +246,80 @@ Definition Loop:= <{while true do skip end}>.
 Definition NonTrivialLoop:= <{while 0<=X do X:=X+1 end}>. 
 
 CoFixpoint Never:= @Step (state) Never.
+CoFixpoint never:= @step (state) never.
 
 Definition P:= <{X:=0; while X=0 do X:=X + 1 end }>.
 Definition stP:= X !-> 1.
 
-Theorem P_evals_to_stP: Eqp (ceval_comp empty_st P) (Return stP).
-Proof. 
-eval_ (ceval_comp empty_st P).
-eval_ (ceval_comp empty_st <{ X := 0 }>). rewrite Bind_On_Return.
-eval_ (ceval_comp (X !-> 0) <{ while X = 0 do X := X + 1 end }>).
-rewrite Bind_On_Return. eval_( ceval_comp (X !-> 0) <{ X := X + 1 }>).
-rewrite Bind_On_Return. 
-eval_ ((ceval_comp (t_update (X !-> 0) X 1) <{ while X = 0 do X := X + 1 end }>)).
-rewrite Bind_On_Return. apply eqp_value with (a:= stP). 
-- apply value_step. assert ((t_update (X !-> 0) X 1)= stP). 
-  apply functional_extensionality; intros; unfold stP; unfold t_update; 
-destruct (eqb_string X x); reflexivity.
-  rewrite H. constructor. 
-- constructor. Qed.  
-  
+Lemma Return_interp_rtrn: forall {A} (x:A), (interp (Return x)) = rtrn x.
+Proof. intros. eval_ ((interp (Return x))). reflexivity. Qed.  
 
-Theorem Loop_is_never: forall st, Eqp (ceval_comp st Loop) Never.
+  Theorem P_evals_to_stP: Eqp (interp (ceval_comp empty_st P)) (rtrn stP).
+  Proof. 
+  eval_ (interp (ceval_comp empty_st P)).
+  eval_ (interp (ceval_comp (X !-> 0) <{ while X = 0 do X := X + 1 end }>)). 
+  eval_ (interp
+  (st' <- ceval_comp (X !-> 0) <{ X := X + 1 }>;
+   Step (ceval_comp st' <{ while X = 0 do X := X + 1 end }>))).
+    apply eqp_value with (a:= stP).
+  -   
+  eval_ (interp
+  (Step
+     (ceval_comp (t_update (X !-> 0) X 1)
+        <{ while X = 0 do X := X + 1 end }>))). 
+  eval_ ((interp
+  (ceval_comp (t_update (X !-> 0) X 1)
+     <{ while X = 0 do X := X + 1 end }>))).
+      repeat constructor. assert ((t_update (X !-> 0) X 1)= stP). 
+    apply functional_extensionality; intros; unfold stP; unfold t_update; 
+  destruct (eqb_string X x); reflexivity.
+    rewrite H. rewrite Return_interp_rtrn. apply value_return with (a:=stP).
+  - constructor. Qed.  
+
+Theorem Loop_is_Never: forall st, Eqp (interp (ceval_comp st Loop)) never.
 Proof. 
-intros. cofix CIH. eval_ (ceval_comp st Loop).
-rewrite Bind_On_Return.
-eval_ ((ceval_comp st CSkip)).
-rewrite Bind_On_Return. eval_ (Never).
- now auto.
-apply eqp_value with (a:=tt); constructor. apply CIH. Qed.
+intros. cofix CIH. eval_ (interp (ceval_comp st Loop)).
+eval_ (interp (st' <- ceval_comp st <{ skip }>; Step (ceval_comp st' Loop))).
+eval_ ((interp (Step (ceval_comp st Loop)))).
+eval_ (never). eval_ (never). eval_ (never). repeat constructor. apply CIH. Qed.  
+    
 
 Theorem Loop_is_NonTrivialLoop: 
-forall st1 st2, Eqp (ceval_comp st1 Loop) (ceval_comp st2 NonTrivialLoop). 
+forall st1 st2, Eqp (interp (ceval_comp st1 Loop)) (interp (ceval_comp st2 NonTrivialLoop)). 
 Proof. 
-cofix CIH. intros.   
-eval_ ((ceval_comp st1 Loop)). rewrite Bind_On_Return. 
-eval_ (ceval_comp st1 <{ skip }>).  rewrite Bind_On_Return.
-eval_ (ceval_comp st2 NonTrivialLoop). 
-rewrite Bind_On_Return. 
-eval_ (ceval_comp st2 <{ X := X + 1 }>).
-rewrite Bind_On_Return. 
-constructor. now auto. apply eqp_value with (a:=tt); constructor.    
-unfold NonTrivialLoop in CIH. 
-apply CIH with (st1:=st1) (st2:=(t_update st2 X (st2 X + 1))). Qed. 
+cofix CIH. intros.
+eval_ (interp (ceval_comp st1 Loop)).
+eval_ (interp (st' <- ceval_comp st1 <{ skip }>; Step (ceval_comp st' Loop))).
+eval_ (interp (Step (ceval_comp st1 Loop))).
+eval_ (interp (ceval_comp st2 NonTrivialLoop)).
+eval_ (interp
+(st' <- ceval_comp st2 <{ X := X + 1 }>;
+ Step (ceval_comp st' NonTrivialLoop))).
+eval_ (interp
+(Step (ceval_comp (t_update st2 X (st2 X + 1)) NonTrivialLoop))).
+repeat constructor. apply CIH. Qed.
+
+(** Why did we use [Computation] instead of [Partial]? Because [bind] is a 
+_function_ and _not_ a _constructor_ and therefore the definition that we would use 
+would not comply with the syntactic criterion required by the termination checker. *)
+
+Fail CoFixpoint ceval_partial (st : state) (c : com) : Partial state :=
+match c with
+      | <{ skip }> =>
+          rtrn st
+      | <{ l := a1 }> =>
+          rtrn (t_update st l (aeval st a1)) 
+      | <{ c1 ; c2 }> =>
+          st' <=== ceval_partial st c1 ; ceval_partial st' c2
+      | <{ if b then c1 else c2 end }> =>
+           v <=== rtrn (beval st b); match v with 
+                                        | true  => ceval_partial st c1
+                                        | false => ceval_partial st c2 end
+
+      | <{ while b1 do c' end }> =>
+          v <=== rtrn (beval st b1); match v with 
+                                        | true  => st' <=== ceval_partial st c'; step (ceval_partial st' c)
+                                        | false => rtrn st end
+          
+end.
 

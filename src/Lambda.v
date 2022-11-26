@@ -1,5 +1,6 @@
 From Coq Require Import List Lia Arith.
 Require Import Monads.Computation.
+Require Import Monads.Delay.
 
 (** * Untyped l-calculus with De Brujin indices *)
 Definition const :=nat. 
@@ -24,6 +25,7 @@ for the untyped l-calculus with constants, where we can have three different sce
 - stuck computation 
 - non terminating computation 
 By composing [Computation] with [option] (which is also a [Monad]) we can account for all these behaviours at once *)
+Definition Fail {A} := Return (@None A).
 CoFixpoint bs (t: term) (e:env): Computation (option value) :=
 match t with 
  | Const i => ret (Int i)
@@ -40,38 +42,48 @@ match t with
 
 
 (** * Examples*)
-Lemma eqp_successful: forall e, Eqp ( bs (Const 2) e) (ret (Int 2)).
-Proof. 
-intros. eval_ (bs (Const 2) e). apply eqp_equal_ret.  Qed.
+Lemma successful_computation: forall e, Eqp (interp ( bs (Const 2) e)) (rtrn (Some (Int 2))).
+Proof. intros. eval_ (interp (bs (Const 2) e)). Qed.
 
-Lemma eqp_failure: forall e, Eqp (bs (App (Const 1) (Const 2)) e) Fail.
-Proof. 
-intros. eval_ (bs (App (Const 1) (Const 2)) e).
-eval_ (bs (Const 1) e).
-eval_ (bs (Const 2) e). rewrite Bind_On_Return. 
-rewrite Bind_On_Return. apply eqp_equal_ret. Qed.
+Definition fail {A} := rtrn (@None A).
 
-CoFixpoint Never := @Step (option value) Never.
+Lemma interp_fail: forall {A}, (interp (@Fail A)) = @fail A.
+Proof. intros. eval_ (interp (@Fail A)). reflexivity. Qed. 
 
-Lemma eqp_never:  Eqp (Step Never) Never.
+Lemma stuck_computation: forall e, Eqp (interp (bs (App (Const 1) (Const 2)) e)) fail.
 Proof. 
-cofix CIH. rewrite frob_eq with (x:=Never). simpl.  constructor. now auto.
-apply eqp_value with (a:=tt); constructor. assumption. Qed.
+intros. eval_ (interp (bs (App (Const 1) (Const 2)) e)).
+eval_ (interp (_ <- bs (Const 2) e; (@Fail value))).
+rewrite interp_fail. apply eqp_value with (a:=None).
+- constructor. constructor. constructor.
+- constructor. Qed.
+
+
+CoFixpoint Never := @step (option value) Never.
 
 Definition delta := Fun (App (Var 0) (Var 0)).
 Definition omega := App delta delta.
 
-Lemma eqp_infinite: forall e, Eqp (bs omega e) Never.
+Lemma infinite_computation: forall e, Eqp (interp (bs omega e)) Never.
 Proof.  
-intros. eval_ (bs omega e). 
-eval_ (bs delta e). rewrite Bind_On_Return. 
-rewrite Bind_On_Return. eval_ (Never). now auto.
-apply eqp_value with (a:=tt); constructor. cofix CIH. 
-eval_ (bs (App (Var 0) (Var 0)) (Clos (App (Var 0) (Var 0)) e :: e)). 
-eval_ (bs (Var 0) (Clos (App (Var 0) (Var 0)) e :: e)). rewrite Bind_On_Return. 
-rewrite Bind_On_Return. eval_ (Never). now auto.
-apply eqp_value with (a:=tt); constructor. apply CIH. Qed.
-
+intros. eval_ (interp (bs omega e)). 
+eval_ (interp
+(v2 <- bs delta e;
+ match v2 with
+ | Some t => Step (bs (App (Var 0) (Var 0)) (t :: e))
+ | None => Fail
+ end)).
+eval_ (Never). constructor. cofix CIH. 
+eval_ (interp
+(Step (bs (App (Var 0) (Var 0)) (Clos (App (Var 0) (Var 0)) e :: e)))).
+eval_ (Never). constructor. 
+eval_ (interp (bs (App (Var 0) (Var 0)) (Clos (App (Var 0) (Var 0)) e :: e))).
+eval_ (interp
+(v2 <- bs (Var 0) (Clos (App (Var 0) (Var 0)) e :: e);
+ match v2 with
+ | Some t => Step (bs (App (Var 0) (Var 0)) (t :: e))
+ | None => Fail
+ end)). eval_ (Never). eval_ (Never). repeat constructor. apply CIH. Qed.
 
 
 
