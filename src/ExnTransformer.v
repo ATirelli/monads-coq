@@ -1,4 +1,3 @@
-Add LoadPath "./" as Monads .
 
 Require Import Monads.FunctorApplicativeMonad.
 
@@ -7,9 +6,6 @@ Notation "x <- c1 ;; c2" := (bind c1 (fun x => c2))
                              (right associativity, at level 84, c1 at next level).
 
 Set Universe Polymorphism.
-
-
-(** * Definition *)
 
 Inductive exn(A:Type) : Type := 
 | Result : A -> exn A

@@ -1,4 +1,4 @@
-Add LoadPath "./" as Monads .
+
 Require Import Monads.FunctorApplicativeMonad.
 Require Import NPeano Arith Bool String List.
 
@@ -22,7 +22,7 @@ Lemma state_functor_composition_identity {a b c} {s}
   (u : b -> c) (v : a -> b) (r : state_comp s a)
   : state_comp_map  (u <<< v) r = ((state_comp_map  u) <<< (state_comp_map  v)) r.
 Proof. unfold state_comp_map. apply functional_extensionality. intros. unfold compose.
-destruct (r x). auto. Qed.
+destruct (r x). Show Proof. auto. Qed.
 
 
 #[program]

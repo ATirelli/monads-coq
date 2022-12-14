@@ -1,4 +1,3 @@
-Add LoadPath "./" as Monads .
 Require Import Monads.OuputMonad.
 Require Import Monads.FunctorApplicativeMonad.
 Require Import NPeano Arith Bool String List.
