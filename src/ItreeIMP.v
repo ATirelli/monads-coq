@@ -620,7 +620,6 @@ Theorem CSeq_congruence : forall c1 c1' c2 c2',
       - reflexivity.
         Qed.
 
-Example 
 
 End Denote.
 

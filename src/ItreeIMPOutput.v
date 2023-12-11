@@ -749,7 +749,7 @@ forall eff, {pf:E -< eff == F[E]} (t : itree eff A)
       environment.  *)
 
 
-
+(*
 Compute denote_imp (fact 8).
 Variable E: Type -> Type.
 Check stateT env (itree E) (list nat).
@@ -784,7 +784,8 @@ Section InterpImpProperties.
       at the _Asm_ level (see AsmOptimizations.v).
    *)
 
-  Context {E': Type -> Type}.
+  
+    Context {E': Type -> Type}.
   Notation E := (ImpState +' E').
 
   (** This interpreter is compatible with the equivalence-up-to-tau. *)
@@ -815,8 +816,9 @@ Section InterpImpProperties.
     simpl.
     reflexivity.
   Qed.
+  
 
 End InterpImpProperties.
-
+*)
 
 (** We now turn to our target language, in file [Asm].v *)
