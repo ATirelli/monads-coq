@@ -31,7 +31,7 @@ Instance state_Functor (s : Type)
   { map := @state_comp_map s  
   }.
   
-Next Obligation. apply state_functor_identity. Defined.
+Next Obligation. apply state_functor_identity. Defined
 
 Definition state_comp_apply {s}{a b} (f : state_comp s (a -> b)) (fs : state_comp s a)
   : state_comp s b := 

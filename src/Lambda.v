@@ -48,7 +48,7 @@ Proof. intros. eval_ (interp (bs (Const 2) e)). Qed.
 Definition fail {A} := rtrn (@None A).
 
 Lemma interp_fail: forall {A}, (interp (@Fail A)) = @fail A.
-Proof. intros. eval_ (interp (@Fail A)). reflexivity. Qed. 
+Proof. intros. eval_ (interp (@Fail A)). simpl. reflexivity. Qed. 
 
 Lemma stuck_computation: forall e, Eqp (interp (bs (App (Const 1) (Const 2)) e)) fail.
 Proof. 

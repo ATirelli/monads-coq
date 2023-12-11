@@ -23,7 +23,7 @@ Set Universe Polymorphism.
 Declare Scope monad_scope.
 Delimit Scope monad_scope with monad.
 
-#[local]
+
 Declare Scope prelude_scope.
 Open Scope prelude_scope.
 
@@ -153,7 +153,7 @@ Class MonadTrans (t : forall (m : Type -> Type), Type -> Type) : Type :=
 Arguments lift [t _ m _ a] (_%monad).
 
 
-#[local]
+
 Open Scope signature_scope.
 
 Definition join {m a} `{Monad m} (x : m (m a)) : m a :=

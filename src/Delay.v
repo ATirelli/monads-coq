@@ -308,13 +308,13 @@ eval_ (bind (fun y : a => pure (f y)) x). destruct x.
 eval_ (pure (f a0)). constructor.  finish_with CIH. Qed. 
 
 (** * [Partial] is a [Monad]*)
-
+#[local]
 Program Instance partial_Functor: Functor (Partial) :=
   { map := @map  
   }.
 Next Obligation. apply eqp_is_eq. apply map_id_eq. Qed.
 Next Obligation. apply eqp_is_eq. apply map_assoc. Qed.
-
+#[local]
 Program Instance partial_Applicative 
   : Applicative (Partial ) :=
   { pure := @pure 
@@ -329,7 +329,7 @@ Next Obligation. apply eqp_is_eq. apply partial_applicative_pure_map. Qed.
 Definition bind_m {a b} (x: Partial a) (f: a -> Partial b) : Partial b := 
 bind f x.
 
-
+#[local]
 Program Instance partial_Monad : Monad (Partial) :=
   { bind := @bind_m 
   }.
